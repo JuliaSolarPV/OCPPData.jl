@@ -63,13 +63,6 @@ export V16, V201
     req = V16.HeartbeatRequest()
     JSON.json(req)
 
-    boot = V16.BootNotificationRequest(
-        charge_point_vendor = "TestVendor",
-        charge_point_model = "TestModel",
-    )
-    json_str = JSON.json(boot)
-    JSON.parse(json_str, V16.BootNotificationRequest)
-
     # Action registry
     V16.request_type("Heartbeat")
     V16.response_type("Heartbeat")
