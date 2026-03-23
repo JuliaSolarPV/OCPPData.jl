@@ -83,3 +83,32 @@ end
     @test length(uid) == 36  # UUID format: 8-4-4-4-12
     @test count(==('-'), uid) == 4
 end
+
+@testitem "Decode invalid JSON throws" tags = [:fast] begin
+    using OCPP
+    @test_throws Exception decode("not-json {{{")
+end
+
+@testitem "Decode non-array JSON throws" tags = [:fast] begin
+    using OCPP
+    @test_throws Exception decode("{\"key\":\"value\"}")
+end
+
+@testitem "Encode/decode preserves bool, float, and array payload" tags = [:fast] begin
+    using OCPP
+    payload = Dict{String,Any}("flag" => true, "limit" => 21.4, "ids" => Any[1, 2, 3])
+    original = Call("uid-x", "SetChargingProfile", payload)
+    decoded = decode(encode(original))
+    @test decoded.payload["flag"] === true
+    @test decoded.payload["limit"] ≈ 21.4
+    @test decoded.payload["ids"] == [1, 2, 3]
+end
+
+@testitem "CallError encode/decode with non-empty details" tags = [:fast] begin
+    using OCPP
+    original =
+        CallError("uid-e", "InternalError", "details matter", Dict{String,Any}("key" => "val"))
+    decoded = decode(encode(original))
+    @test decoded isa CallError
+    @test decoded.error_details["key"] == "val"
+end

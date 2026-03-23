@@ -93,3 +93,64 @@ end
     cd = CustomData(vendor_id = "com.example")
     @test cd.vendor_id == "com.example"
 end
+
+@testitem "V201 StatusNotificationRequest construction and JSON" tags = [:fast] begin
+    using OCPP.V201
+    import JSON
+    status_val = first(instances(ConnectorStatus))
+    req = StatusNotificationRequest(
+        timestamp = "2025-01-01T12:00:00Z",
+        connector_status = status_val,
+        evse_id = 1,
+        connector_id = 1,
+    )
+    json = JSON.json(req)
+    @test occursin("connectorStatus", json)
+    @test occursin("evseId", json)
+    req2 = JSON.parse(json, StatusNotificationRequest)
+    @test req2.evse_id == 1
+    @test req2.connector_id == 1
+    @test req2.connector_status == status_val
+end
+
+@testitem "V201 GetVariablesRequest with nested Component and Variable" tags = [:fast] begin
+    using OCPP.V201
+    import JSON
+    req = GetVariablesRequest(
+        get_variable_data = [
+            GetVariableData(
+                component = Component(name = "SmartChargingCtrlr"),
+                variable = Variable(name = "Enabled"),
+            ),
+        ],
+    )
+    json = JSON.json(req)
+    @test occursin("getVariableData", json)
+    @test occursin("SmartChargingCtrlr", json)
+    req2 = JSON.parse(json, GetVariablesRequest)
+    @test req2.get_variable_data[1].component.name == "SmartChargingCtrlr"
+    @test req2.get_variable_data[1].variable.name == "Enabled"
+end
+
+@testitem "V201 DataTransferRequest optional fields" tags = [:fast] begin
+    using OCPP.V201
+    import JSON
+    req = DataTransferRequest(vendor_id = "com.example", message_id = "Ping")
+    json = JSON.json(req)
+    @test occursin("vendorId", json)
+    req2 = JSON.parse(json, DataTransferRequest)
+    @test req2.vendor_id == "com.example"
+    @test req2.message_id == "Ping"
+    req3 = DataTransferRequest(vendor_id = "com.example")
+    @test req3.message_id === nothing
+end
+
+@testitem "V201 ResetRequest round-trip" tags = [:fast] begin
+    using OCPP.V201
+    import JSON
+    req = ResetRequest(type = Immediate)
+    json = JSON.json(req)
+    @test occursin("\"Immediate\"", json)
+    req2 = JSON.parse(json, ResetRequest)
+    @test req2.type == Immediate
+end

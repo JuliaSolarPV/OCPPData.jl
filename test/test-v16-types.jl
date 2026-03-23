@@ -165,6 +165,64 @@ end
     @test req2.status == ChargePointAvailable
 end
 
+@testitem "AuthorizeRequest JSON round-trip" tags = [:fast] begin
+    using OCPP.V16
+    using JSON
+    req = AuthorizeRequest(id_tag = "RFID1234")
+    @test req.id_tag == "RFID1234"
+    json = JSON.json(req)
+    @test occursin("idTag", json)
+    req2 = JSON.parse(json, AuthorizeRequest)
+    @test req2.id_tag == "RFID1234"
+end
+
+@testitem "AuthorizeResponse with nested IdTagInfo" tags = [:fast] begin
+    using OCPP.V16
+    using JSON
+    resp = AuthorizeResponse(id_tag_info = IdTagInfo(status = AuthorizationAccepted))
+    json = JSON.json(resp)
+    @test occursin("idTagInfo", json)
+    resp2 = JSON.parse(json, AuthorizeResponse)
+    @test resp2.id_tag_info.status == AuthorizationAccepted
+end
+
+@testitem "DataTransferRequest optional fields" tags = [:fast] begin
+    using OCPP.V16
+    using JSON
+    req = DataTransferRequest(vendor_id = "com.example", message_id = "msg1", data = "hello")
+    json = JSON.json(req)
+    @test occursin("vendorId", json)
+    req2 = JSON.parse(json, DataTransferRequest)
+    @test req2.vendor_id == "com.example"
+    @test req2.message_id == "msg1"
+    req3 = DataTransferRequest(vendor_id = "com.example")
+    @test req3.message_id === nothing
+    @test req3.data === nothing
+end
+
+@testitem "ChangeConfigurationRequest round-trip" tags = [:fast] begin
+    using OCPP.V16
+    using JSON
+    req = ChangeConfigurationRequest(key = "HeartbeatInterval", value = "300")
+    json = JSON.json(req)
+    @test occursin("HeartbeatInterval", json)
+    req2 = JSON.parse(json, ChangeConfigurationRequest)
+    @test req2.key == "HeartbeatInterval"
+    @test req2.value == "300"
+end
+
+@testitem "GetConfigurationRequest with optional key array" tags = [:fast] begin
+    using OCPP.V16
+    using JSON
+    req = GetConfigurationRequest(key = ["HeartbeatInterval", "ConnectionTimeOut"])
+    json = JSON.json(req)
+    @test occursin("HeartbeatInterval", json)
+    req2 = JSON.parse(json, GetConfigurationRequest)
+    @test req2.key == ["HeartbeatInterval", "ConnectionTimeOut"]
+    req3 = GetConfigurationRequest()
+    @test req3.key === nothing
+end
+
 @testitem "SetChargingProfileRequest camelCase for csChargingProfiles" tags = [:fast] begin
     using OCPP.V16
     using JSON

@@ -67,3 +67,27 @@ end
     using JSON
     @test_throws KeyError JSON.parse("\"InvalidValue\"", RegistrationStatus)
 end
+
+@testitem "Enum round-trip for AvailabilityType" tags = [:fast] begin
+    using OCPP.V16
+    using JSON
+    for val in instances(AvailabilityType)
+        @test JSON.parse(JSON.json(val), AvailabilityType) == val
+    end
+end
+
+@testitem "Enum round-trip for Reason" tags = [:fast] begin
+    using OCPP.V16
+    using JSON
+    for val in instances(Reason)
+        @test JSON.parse(JSON.json(val), Reason) == val
+    end
+end
+
+@testitem "Enum round-trip for MessageTrigger" tags = [:fast] begin
+    using OCPP.V16
+    using JSON
+    for val in instances(MessageTrigger)
+        @test JSON.parse(JSON.json(val), MessageTrigger) == val
+    end
+end

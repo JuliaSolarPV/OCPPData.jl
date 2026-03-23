@@ -55,3 +55,19 @@ end
     import JSON
     @test_throws KeyError JSON.parse("\"InvalidValue\"", RegistrationStatus)
 end
+
+@testitem "V201 enum round-trip for Reset" tags = [:fast] begin
+    using OCPP.V201
+    import JSON
+    for val in instances(Reset)
+        @test JSON.parse(JSON.json(val), Reset) == val
+    end
+end
+
+@testitem "V201 enum round-trip for TriggerReason" tags = [:fast] begin
+    using OCPP.V201
+    import JSON
+    for val in instances(TriggerReason)
+        @test JSON.parse(JSON.json(val), TriggerReason) == val
+    end
+end
