@@ -1,9 +1,6 @@
-# Don't forget to run
-#
-#     pkg> dev ..
-#
 [deps]
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 LiveServer = "16fef848-5104-11e9-1b77-fb7a48bbb589"
 OCPP = "96fa3b67-1af3-5f07-99a6-8e4efc5edabb"
 
