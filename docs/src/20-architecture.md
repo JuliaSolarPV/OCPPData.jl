@@ -1,149 +1,5 @@
 # [Architecture](@id architecture)
 
-## Overview
-
-OCPP.jl generates all message types at **module load time** from the official OCPP JSON schema files. No types are hand-written — they are created programmatically via `Core.eval` when `using OCPP` is first called.
-
-```text
-JSON schema files (src/v16/schemas/, src/v201/schemas/)
-        │
-        ▼
-  schema_reader.jl  ──── reads schemas, generates:
-        │                   • @enum types (with JSON serialization)
-        │                   • @kwdef structs (with camelCase mapping)
-        │                   • action registries
-        ▼
-  V16 / V201 submodules  ──── contain all generated types
-```
-
-## Schema-Driven Type Generation
-
-The core logic lives in `src/schema_reader.jl`. There are two code paths, one per OCPP version:
-
-### V16: `generate_types!`
-
-V16 schemas are flat — each file defines one request or response with inline property definitions. Enum values appear as `"enum": [...]` arrays directly inside properties.
-
-Because V16 schemas don't name their enum types or nested objects, OCPP.jl uses **hand-curated registries** (in `src/v16/registries.jl`):
-
-- **`V16_ENUM_REGISTRY`**: Maps sorted enum value lists → `(EnumTypeName, member_prefix)`. This is how the package knows that `["Accepted", "Pending", "Rejected"]` should become `RegistrationStatus`.
-- **`V16_NESTED_TYPE_NAMES`**: Maps JSON property names → Julia type names for shared nested objects (e.g., `"idTagInfo" => :IdTagInfo`).
-
-The generation pipeline:
-
-1. **Read schemas** — parse all `.json` files from `src/v16/schemas/`
-2. **Collect enums** — walk all properties, match enum value sets against the registry, generate `@enum` types with forward/reverse string lookup dicts
-3. **Collect nested types** — find object-typed properties named in `V16_NESTED_TYPE_NAMES`, topologically sort by dependency, generate structs
-4. **Generate action structs** — one struct per schema file (e.g., `BootNotificationRequest`)
-5. **Build action registry** — `V16_ACTIONS` dict mapping `"BootNotification" => (request=..., response=...)`
-
-### V201: `generate_types_from_definitions!`
-
-V201 schemas use JSON Schema's `definitions` + `$ref` pattern. Each schema file contains a `definitions` section with named types like `"ChargingStationType"` and `"BootReasonEnumType"`, referenced via `"$ref": "#/definitions/..."`.
-
-Because types are explicitly named in the schemas, V201 needs **no hand-curated registry**. Names are derived automatically:
-
-- `"BootReasonEnumType"` → `BootReason` (strip `EnumType` suffix)
-- `"ChargingStationType"` → `ChargingStation` (strip `Type` suffix)
-- Enum member prefixes are auto-derived from the definition name, applied when values collide across enums or shadow Base names
-
-The generation pipeline:
-
-1. **Read schemas** — parse all `.json` files from `src/v201/schemas/`
-2. **Merge definitions** — collect all `definitions` sections across schema files into one dict
-3. **Classify definitions** — separate into enum definitions (have `"enum"` key) and object definitions (have `"properties"`)
-4. **Generate enums** — derive names and prefixes, create `@enum` types
-5. **Generate object types** — topologically sort by `$ref` dependencies, generate structs
-6. **Generate action structs** — one struct per schema file
-7. **Build action registry** — `V201_ACTIONS` dict
-
-## Inspecting Generated Types
-
-You can inspect the generated types at runtime:
-
-```@example arch
-using OCPP
-using OCPP.V16
-import JSON
-nothing # hide
-```
-
-Struct fields (shows snake\_case names and types):
-
-```@example arch
-fieldnames(BootNotificationRequest)
-```
-
-```@example arch
-fieldtypes(BootNotificationRequest)
-```
-
-Enum members:
-
-```@example arch
-instances(RegistrationStatus) |> collect
-```
-
-All V16 action names:
-
-```@example arch
-sort(collect(keys(V16.V16_ACTIONS)))
-```
-
-All V201 action names:
-
-```@example arch
-sort(collect(keys(OCPP.V201.V201_ACTIONS)))
-```
-
-## How Types Are Generated
-
-All types are created via `Core.eval` into the target module (V16 or V201):
-
-### Enums
-
-Each OCPP enum becomes a Julia `@enum` with:
-
-- Forward dict: `EnumMember => "OCPPStringValue"`
-- Reverse dict: `"OCPPStringValue" => EnumMember`
-- `Base.string(x)` override returning the OCPP wire value
-- `StructUtils.lift(T, s)` override for deserialization from JSON strings
-
-```@example arch
-# string() returns the OCPP wire value, not the Julia member name
-string(RegistrationAccepted)
-```
-
-### Structs
-
-Each message type becomes a `Base.@kwdef` struct with:
-
-- Required fields as plain typed fields (e.g., `charge_point_vendor::String`)
-- Optional fields as `Union{T, Nothing}` with default `nothing`
-- `StructUtils.fieldtags` mapping `snake_case` Julia names ↔ `camelCase` JSON names
-- Empty structs (like `HeartbeatRequest`) get `StructUtils.structlike(::Type{T}) = true` so they serialize as `{}` instead of a string
-
-```@example arch
-# Empty struct serializes as {}
-JSON.json(HeartbeatRequest())
-```
-
-```@example arch
-# camelCase on the wire, snake_case in Julia
-JSON.json(BootNotificationRequest(
-    charge_point_vendor = "V",
-    charge_point_model = "M",
-))
-```
-
-### Action Registry
-
-A `Dict{String, NamedTuple{(:request, :response), ...}}` constant with helper functions `request_type(action)` and `response_type(action)`.
-
-```@example arch
-V16.V16_ACTIONS["Heartbeat"]
-```
-
 ## Module Structure
 
 ```text
@@ -155,10 +11,75 @@ module OCPP                          # top-level
 │
 ├── module V16                       # submodule — all V16 types
 │   ├── v16/registries.jl            # hand-curated enum + nested type registries
-│   └── v16/schemas/*.json           # official OCPP 1.6 JSON schemas
+│   └── v16/schemas/*.json           # official OCPP 1.6 JSON schemas (56 files)
 │
 └── module V201                      # submodule — all V201 types
-    └── v201/schemas/*.json          # official OCPP 2.0.1 JSON schemas
+    └── v201/schemas/*.json          # official OCPP 2.0.1 JSON schemas (128 files)
 ```
 
-The `schema_reader.jl` functions are called from the top-level `OCPP` module but `Core.eval` their output into the V16/V201 submodules. This is why V16 and V201 use `using ..OCPP: generate_types!` — the generation logic is shared, but the generated types live in the version-specific namespace.
+The top-level `OCPP` module provides the wire-level types (`Call`, `CallResult`, `CallError`), the codec (`encode`/`decode`), and schema validation (`validate`). The version submodules V16 and V201 contain all OCPP message structs and enums — these are generated at load time from the JSON schema files. See [Schema-Driven Type Generation](@ref type-generation) for a detailed walkthrough of how this works.
+
+## Key Design Decisions
+
+### Why generate types from schemas?
+
+The OCPP specification defines 28 actions (V16) and 64 actions (V201), each with request and response payloads. Hand-writing 200+ structs would be error-prone and hard to keep in sync with the spec. Instead, the official JSON schema files are the single source of truth.
+
+### Why two code paths?
+
+V16 and V201 schemas have fundamentally different structures:
+
+- **V16**: Flat schemas — each file has inline properties, no named types. Requires a hand-curated registry to name enums and shared types.
+- **V201**: Self-describing schemas — uses `definitions` + `$ref` with explicit type names. No registry needed.
+
+This is handled by two entry points in `schema_reader.jl`: `generate_types!` (V16) and `generate_types_from_definitions!` (V201).
+
+### Why `Core.eval`?
+
+Types are determined from data (JSON files), not from source code. `Core.eval(mod, expr)` is the mechanism for creating types programmatically inside a module at load time. The cost is paid once at precompilation and cached.
+
+### Why submodules?
+
+V16 and V201 define types with the same names (e.g., both have `BootNotificationRequest`) but with different fields. Putting them in separate submodules avoids name collisions and lets users import only the version they need:
+
+```@example arch
+using OCPP
+
+# V16 BootNotificationRequest has charge_point_vendor, charge_point_model, ...
+fieldnames(OCPP.V16.BootNotificationRequest)
+```
+
+```@example arch
+# V201 BootNotificationRequest has reason, charging_station, ...
+fieldnames(OCPP.V201.BootNotificationRequest)
+```
+
+## Data Flow
+
+```text
+                    ┌─────────────────────────────────────────┐
+                    │            Precompilation                │
+                    │                                         │
+                    │  JSON schemas ──→ schema_reader.jl      │
+                    │                     │                   │
+                    │                Core.eval()              │
+                    │                     │                   │
+                    │              V16/V201 modules           │
+                    │          (structs, enums, registry)     │
+                    └─────────────────────────────────────────┘
+
+                    ┌─────────────────────────────────────────┐
+                    │              Runtime                     │
+                    │                                         │
+  WebSocket ──→ decode() ──→ validate() ──→ JSON.parse(,T)   │
+   frame         codec.jl    validation.jl    StructUtils     │
+                    │                            │            │
+                    │                     Typed struct         │
+                    │                            │            │
+                    │                    Application logic     │
+                    │                            │            │
+                    │                     JSON.json(resp)     │
+  WebSocket ←── encode() ←──────────────────────┘            │
+   frame         codec.jl                                     │
+                    └─────────────────────────────────────────┘
+```
