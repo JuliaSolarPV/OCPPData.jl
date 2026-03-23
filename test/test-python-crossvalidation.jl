@@ -1,12 +1,10 @@
 # Cross-validation tests: serialize Julia types to JSON, validate with Python ocpp library
-# via PythonCall.jl.
+# via PythonCall.jl + CondaPkg.jl.
 #
 # Run:
-#   julia --project=test -e 'using TestItemRunner; @run_package_tests filter=ti->endswith(ti.filename, "test-python-crossvalidation.jl") verbose=true'
+#   julia --project=test -e 'using TestItemRunner; @run_package_tests filter=ti->(:crossvalidation in ti.tags) verbose=true'
 
 @testsnippet PythonOCPP begin
-    # Must be set before `using PythonCall` so it picks the right interpreter
-    ENV["JULIA_PYTHONCALL_EXE"] = joinpath(@__DIR__, "python", ".venv", "bin", "python")
     using PythonCall
     import JSON
 
