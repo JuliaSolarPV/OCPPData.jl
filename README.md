@@ -1,6 +1,5 @@
 # OCPP.jl
 
-[![Stable Documentation](https://img.shields.io/badge/docs-stable-blue.svg)](https://JuliaSolarPV.github.io/OCPP.jl/stable)
 [![Development documentation](https://img.shields.io/badge/docs-dev-blue.svg)](https://JuliaSolarPV.github.io/OCPP.jl/dev)
 
 [![Test workflow status](https://github.com/JuliaSolarPV/OCPP.jl/actions/workflows/Test.yml/badge.svg?branch=main)](https://github.com/JuliaSolarPV/OCPP.jl/actions/workflows/Test.yml?query=branch%3Amain)
