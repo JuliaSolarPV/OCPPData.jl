@@ -37,7 +37,8 @@
     end
 
     @testset "Decode CallResult round-trip" begin
-        original = CallResult("uid-2", Dict{String,Any}("currentTime" => "2025-01-01T00:00:00Z"))
+        original =
+            CallResult("uid-2", Dict{String,Any}("currentTime" => "2025-01-01T00:00:00Z"))
         decoded = decode(encode(original))
         @test decoded isa CallResult
         @test decoded.unique_id == original.unique_id
@@ -90,8 +91,12 @@
     end
 
     @testset "CallError with non-empty details" begin
-        original =
-            CallError("uid-e", "InternalError", "details matter", Dict{String,Any}("key" => "val"))
+        original = CallError(
+            "uid-e",
+            "InternalError",
+            "details matter",
+            Dict{String,Any}("key" => "val"),
+        )
         decoded = decode(encode(original))
         @test decoded isa CallError
         @test decoded.error_details["key"] == "val"

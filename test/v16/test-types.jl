@@ -57,7 +57,8 @@
     end
 
     @testset "IdTagInfo shared sub-type" begin
-        info = IdTagInfo(status = AuthorizationAccepted, expiry_date = "2025-12-31T23:59:59Z")
+        info =
+            IdTagInfo(status = AuthorizationAccepted, expiry_date = "2025-12-31T23:59:59Z")
         json = JSON.json(info)
         @test occursin("expiryDate", json)
         @test occursin("\"Accepted\"", json)
@@ -164,7 +165,11 @@
     end
 
     @testset "DataTransferRequest optional fields" begin
-        req = DataTransferRequest(vendor_id = "com.example", message_id = "msg1", data = "hello")
+        req = DataTransferRequest(
+            vendor_id = "com.example",
+            message_id = "msg1",
+            data = "hello",
+        )
         json = JSON.json(req)
         @test occursin("vendorId", json)
         req2 = JSON.parse(json, DataTransferRequest)

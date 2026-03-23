@@ -6,8 +6,7 @@
 
 @testsnippet PythonOCPP begin
     # Must be set before `using PythonCall` so it picks the right interpreter
-    ENV["JULIA_PYTHONCALL_EXE"] =
-        joinpath(@__DIR__, "python", ".venv", "bin", "python")
+    ENV["JULIA_PYTHONCALL_EXE"] = joinpath(@__DIR__, "python", ".venv", "bin", "python")
     using PythonCall
     import JSON
 
@@ -49,8 +48,11 @@
 
     """Validate a Julia struct as an OCPP response payload."""
     function py_validate_response(action::String, version::String, julia_struct)
-        msg =
-            _PyCallResult(unique_id = "1", action = action, payload = _to_pydict(julia_struct))
+        msg = _PyCallResult(
+            unique_id = "1",
+            action = action,
+            payload = _to_pydict(julia_struct),
+        )
         _validate(msg; ocpp_version = version)
     end
 end
@@ -59,9 +61,7 @@ end
 # V16
 # ---------------------------------------------------------------------------
 
-@testitem "Python cross-validation: OCPP 1.6" tags = [:crossvalidation] setup = [
-    PythonOCPP,
-] begin
+@testitem "Python cross-validation: OCPP 1.6" tags = [:crossvalidation] setup = [PythonOCPP] begin
     using OCPP.V16
     using Test
 
@@ -203,9 +203,8 @@ end
 # V201
 # ---------------------------------------------------------------------------
 
-@testitem "Python cross-validation: OCPP 2.0.1" tags = [:crossvalidation] setup = [
-    PythonOCPP,
-] begin
+@testitem "Python cross-validation: OCPP 2.0.1" tags = [:crossvalidation] setup =
+    [PythonOCPP] begin
     using OCPP.V201
     using Test
 
@@ -215,7 +214,10 @@ end
             "2.0.1",
             BootNotificationRequest(
                 reason = BootReasonPowerUp,
-                charging_station = ChargingStation(model = "TestModel", vendor_name = "TestVendor"),
+                charging_station = ChargingStation(
+                    model = "TestModel",
+                    vendor_name = "TestVendor",
+                ),
             ),
         )
         py_validate_response(
@@ -239,7 +241,9 @@ end
         py_validate_request(
             "Authorize",
             "2.0.1",
-            AuthorizeRequest(id_token = IdToken(id_token = "RFID1234", type = IdTokenCentral)),
+            AuthorizeRequest(
+                id_token = IdToken(id_token = "RFID1234", type = IdTokenCentral),
+            ),
         )
         @test true
     end

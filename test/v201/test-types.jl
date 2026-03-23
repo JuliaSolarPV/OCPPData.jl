@@ -6,7 +6,10 @@
     @testset "BootNotificationRequest construction" begin
         req = BootNotificationRequest(
             reason = BootReasonPowerUp,
-            charging_station = ChargingStation(model = "TestModel", vendor_name = "TestVendor"),
+            charging_station = ChargingStation(
+                model = "TestModel",
+                vendor_name = "TestVendor",
+            ),
         )
         @test req.reason == BootReasonPowerUp
         @test req.charging_station.model == "TestModel"
@@ -28,7 +31,10 @@
     @testset "BootNotificationRequest JSON round-trip" begin
         req = BootNotificationRequest(
             reason = BootReasonPowerUp,
-            charging_station = ChargingStation(model = "TestModel", vendor_name = "TestVendor"),
+            charging_station = ChargingStation(
+                model = "TestModel",
+                vendor_name = "TestVendor",
+            ),
         )
         req2 = JSON.parse(JSON.json(req), BootNotificationRequest)
         @test req == req2
@@ -48,7 +54,9 @@
     end
 
     @testset "AuthorizeRequest with nested IdToken" begin
-        req = AuthorizeRequest(id_token = IdToken(id_token = "RFID1234", type = IdTokenCentral))
+        req = AuthorizeRequest(
+            id_token = IdToken(id_token = "RFID1234", type = IdTokenCentral),
+        )
         json = JSON.json(req)
         @test occursin("idToken", json)
         req2 = JSON.parse(json, AuthorizeRequest)
