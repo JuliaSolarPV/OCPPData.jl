@@ -1,93 +1,78 @@
-@testitem "Enum string() produces OCPP value" tags = [:fast] begin
-    using OCPP.V16
-    @test string(RegistrationAccepted) == "Accepted"
-    @test string(RegistrationPending) == "Pending"
-    @test string(RegistrationRejected) == "Rejected"
-    @test string(NoError) == "NoError"
-    @test string(ResetHard) == "Hard"
-    @test string(ResetSoft) == "Soft"
-    @test string(MeasurandEnergyActiveImportRegister) == "Energy.Active.Import.Register"
-    @test string(PhaseL1N) == "L1-N"
-    @test string(ReadingInterruptionBegin) == "Interruption.Begin"
-end
-
-@testitem "Enum JSON write" tags = [:fast] begin
+@testitem "V16 Enums" tags = [:fast] begin
     using OCPP.V16
     using JSON
-    @test JSON.json(RegistrationAccepted) == "\"Accepted\""
-    @test JSON.json(ResetHard) == "\"Hard\""
-    @test JSON.json(ChargingRateA) == "\"A\""
-    @test JSON.json(MeasurandEnergyActiveImportRegister) ==
-          "\"Energy.Active.Import.Register\""
-end
+    using Test
 
-@testitem "Enum JSON read" tags = [:fast] begin
-    using OCPP.V16
-    using JSON
-    @test JSON.parse("\"Accepted\"", RegistrationStatus) == RegistrationAccepted
-    @test JSON.parse("\"Pending\"", RegistrationStatus) == RegistrationPending
-    @test JSON.parse("\"Hard\"", ResetType) == ResetHard
-    @test JSON.parse("\"A\"", ChargingRateUnitType) == ChargingRateA
-end
-
-@testitem "Enum round-trip for all RegistrationStatus values" tags = [:fast] begin
-    using OCPP.V16
-    using JSON
-    for val in instances(RegistrationStatus)
-        @test JSON.parse(JSON.json(val), RegistrationStatus) == val
+    @testset "string() produces OCPP value" begin
+        @test string(RegistrationAccepted) == "Accepted"
+        @test string(RegistrationPending) == "Pending"
+        @test string(RegistrationRejected) == "Rejected"
+        @test string(NoError) == "NoError"
+        @test string(ResetHard) == "Hard"
+        @test string(ResetSoft) == "Soft"
+        @test string(MeasurandEnergyActiveImportRegister) == "Energy.Active.Import.Register"
+        @test string(PhaseL1N) == "L1-N"
+        @test string(ReadingInterruptionBegin) == "Interruption.Begin"
     end
-end
 
-@testitem "Enum round-trip for ChargePointErrorCode" tags = [:fast] begin
-    using OCPP.V16
-    using JSON
-    for val in instances(ChargePointErrorCode)
-        @test JSON.parse(JSON.json(val), ChargePointErrorCode) == val
+    @testset "JSON write" begin
+        @test JSON.json(RegistrationAccepted) == "\"Accepted\""
+        @test JSON.json(ResetHard) == "\"Hard\""
+        @test JSON.json(ChargingRateA) == "\"A\""
+        @test JSON.json(MeasurandEnergyActiveImportRegister) ==
+              "\"Energy.Active.Import.Register\""
     end
-end
 
-@testitem "Enum round-trip for Measurand" tags = [:fast] begin
-    using OCPP.V16
-    using JSON
-    for val in instances(Measurand)
-        @test JSON.parse(JSON.json(val), Measurand) == val
+    @testset "JSON read" begin
+        @test JSON.parse("\"Accepted\"", RegistrationStatus) == RegistrationAccepted
+        @test JSON.parse("\"Pending\"", RegistrationStatus) == RegistrationPending
+        @test JSON.parse("\"Hard\"", ResetType) == ResetHard
+        @test JSON.parse("\"A\"", ChargingRateUnitType) == ChargingRateA
     end
-end
 
-@testitem "Enum round-trip for Phase" tags = [:fast] begin
-    using OCPP.V16
-    using JSON
-    for val in instances(Phase)
-        @test JSON.parse(JSON.json(val), Phase) == val
+    @testset "Invalid string throws" begin
+        @test_throws KeyError JSON.parse("\"InvalidValue\"", RegistrationStatus)
     end
-end
 
-@testitem "Enum invalid string throws" tags = [:fast] begin
-    using OCPP.V16
-    using JSON
-    @test_throws KeyError JSON.parse("\"InvalidValue\"", RegistrationStatus)
-end
-
-@testitem "Enum round-trip for AvailabilityType" tags = [:fast] begin
-    using OCPP.V16
-    using JSON
-    for val in instances(AvailabilityType)
-        @test JSON.parse(JSON.json(val), AvailabilityType) == val
+    @testset "Round-trip: RegistrationStatus" begin
+        for val in instances(RegistrationStatus)
+            @test JSON.parse(JSON.json(val), RegistrationStatus) == val
+        end
     end
-end
 
-@testitem "Enum round-trip for Reason" tags = [:fast] begin
-    using OCPP.V16
-    using JSON
-    for val in instances(Reason)
-        @test JSON.parse(JSON.json(val), Reason) == val
+    @testset "Round-trip: ChargePointErrorCode" begin
+        for val in instances(ChargePointErrorCode)
+            @test JSON.parse(JSON.json(val), ChargePointErrorCode) == val
+        end
     end
-end
 
-@testitem "Enum round-trip for MessageTrigger" tags = [:fast] begin
-    using OCPP.V16
-    using JSON
-    for val in instances(MessageTrigger)
-        @test JSON.parse(JSON.json(val), MessageTrigger) == val
+    @testset "Round-trip: Measurand" begin
+        for val in instances(Measurand)
+            @test JSON.parse(JSON.json(val), Measurand) == val
+        end
+    end
+
+    @testset "Round-trip: Phase" begin
+        for val in instances(Phase)
+            @test JSON.parse(JSON.json(val), Phase) == val
+        end
+    end
+
+    @testset "Round-trip: AvailabilityType" begin
+        for val in instances(AvailabilityType)
+            @test JSON.parse(JSON.json(val), AvailabilityType) == val
+        end
+    end
+
+    @testset "Round-trip: Reason" begin
+        for val in instances(Reason)
+            @test JSON.parse(JSON.json(val), Reason) == val
+        end
+    end
+
+    @testset "Round-trip: MessageTrigger" begin
+        for val in instances(MessageTrigger)
+            @test JSON.parse(JSON.json(val), MessageTrigger) == val
+        end
     end
 end
