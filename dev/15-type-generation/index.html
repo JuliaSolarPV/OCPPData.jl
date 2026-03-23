@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Schema-Driven Type Generation · OCPP.jl</title><meta name="title" content="Schema-Driven Type Generation · OCPP.jl"/><meta property="og:title" content="Schema-Driven Type Generation · OCPP.jl"/><meta property="twitter:title" content="Schema-Driven Type Generation · OCPP.jl"/><meta name="description" content="Documentation for OCPP.jl."/><meta property="og:description" content="Documentation for OCPP.jl."/><meta property="twitter:description" content="Documentation for OCPP.jl."/><meta property="og:url" content="https://JuliaSolarPV.github.io/OCPP.jl/15-type-generation/"/><meta property="twitter:url" content="https://JuliaSolarPV.github.io/OCPP.jl/15-type-generation/"/><link rel="canonical" href="https://JuliaSolarPV.github.io/OCPP.jl/15-type-generation/"/><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">OCPP.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">OCPP.jl</a></li><li><a class="tocitem" href="../10-guide/">Usage Guide</a></li><li class="is-active"><a class="tocitem" href>Schema-Driven Type Generation</a><ul class="internal"><li><a class="tocitem" href="#The-Big-Picture"><span>The Big Picture</span></a></li><li><a class="tocitem" href="#What-Gets-Generated"><span>What Gets Generated</span></a></li><li><a class="tocitem" href="#How-V16-Schemas-Work"><span>How V16 Schemas Work</span></a></li><li><a class="tocitem" href="#How-V201-Schemas-Work"><span>How V201 Schemas Work</span></a></li><li><a class="tocitem" href="#How-Core.eval-Works"><span>How <code>Core.eval</code> Works</span></a></li><li><a class="tocitem" href="#Inspecting-What-Was-Generated"><span>Inspecting What Was Generated</span></a></li></ul></li><li><a class="tocitem" href="../20-architecture/">Architecture</a></li><li><a class="tocitem" href="../30-codec/">OCPP-J Codec</a></li><li><a class="tocitem" href="../40-validation/">Schema Validation</a></li><li><a class="tocitem" href="../90-contributing/">Contributing guidelines</a></li><li><a class="tocitem" href="../91-developer/">Developer documentation</a></li><li><a class="tocitem" href="../95-reference/">Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Schema-Driven Type Generation</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Schema-Driven Type Generation</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/JuliaSolarPV/OCPP.jl/blob/main/docs/src/15-type-generation.md#" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="type-generation"><a class="docs-heading-anchor" href="#type-generation">Schema-Driven Type Generation</a><a id="type-generation-1"></a><a class="docs-heading-anchor-permalink" href="#type-generation" title="Permalink"></a></h1><h2 id="The-Big-Picture"><a class="docs-heading-anchor" href="#The-Big-Picture">The Big Picture</a><a id="The-Big-Picture-1"></a><a class="docs-heading-anchor-permalink" href="#The-Big-Picture" title="Permalink"></a></h2><p>OCPP.jl does <strong>not</strong> contain hand-written Julia structs for OCPP messages. Instead, every struct and enum is generated automatically from the official OCPP JSON schema files when the package is first loaded.</p><pre><code class="language-text hljs">src/v16/schemas/BootNotification.json          ──┐
+src/v16/schemas/BootNotificationResponse.json  ──┤
+src/v16/schemas/Heartbeat.json                 ──┤  schema_reader.jl
+...56 schema files total                       ──┼─────────────────→  V16 module
+                                                 │   Core.eval()       • 56 structs
+                                                 │                     • 32 enums
+                                                 │                     • V16_ACTIONS registry
+                                                 │
+src/v201/schemas/BootNotificationRequest.json  ──┤
+src/v201/schemas/BootNotificationResponse.json ──┤  schema_reader.jl
+...128 schema files total                      ──┼─────────────────→  V201 module
+                                                 │   Core.eval()       • 128+ structs
+                                                 │                     • 88 enums
+                                                 │                     • V201_ACTIONS registry
+                                                 └</code></pre><p>This happens at precompilation time via <code>Core.eval(mod, expr)</code> — Julia evaluates struct/enum definitions inside the target submodule (V16 or V201). After the first load, everything is cached and subsequent <code>using OCPP</code> is fast.</p><h2 id="What-Gets-Generated"><a class="docs-heading-anchor" href="#What-Gets-Generated">What Gets Generated</a><a id="What-Gets-Generated-1"></a><a class="docs-heading-anchor-permalink" href="#What-Gets-Generated" title="Permalink"></a></h2><p>Three kinds of Julia types are created from each set of schema files:</p><table><tr><th style="text-align: right">Kind</th><th style="text-align: right">Source</th><th style="text-align: right">Example</th></tr><tr><td style="text-align: right"><strong>Enums</strong></td><td style="text-align: right"><code>&quot;enum&quot;: [...]</code> in schema</td><td style="text-align: right"><code>@enum RegistrationStatus</code> with members <code>RegistrationAccepted</code>, etc.</td></tr><tr><td style="text-align: right"><strong>Shared structs</strong></td><td style="text-align: right">Named object types used across multiple messages</td><td style="text-align: right"><code>ChargingStation</code>, <code>IdTagInfo</code>, <code>Modem</code></td></tr><tr><td style="text-align: right"><strong>Action structs</strong></td><td style="text-align: right">One per schema file (the message payload)</td><td style="text-align: right"><code>BootNotificationRequest</code>, <code>HeartbeatResponse</code></td></tr></table><pre><code class="language-julia hljs">using OCPP
+using OCPP.V16
+import JSON</code></pre><h3 id="Enums"><a class="docs-heading-anchor" href="#Enums">Enums</a><a id="Enums-1"></a><a class="docs-heading-anchor-permalink" href="#Enums" title="Permalink"></a></h3><p>Each OCPP enum becomes a Julia <code>@enum</code> with automatic JSON string conversion:</p><pre><code class="language-julia hljs">instances(RegistrationStatus) |&gt; collect</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">3-element Vector{OCPP.V16.RegistrationStatus}:
+ RegistrationAccepted::RegistrationStatus = 0
+ RegistrationPending::RegistrationStatus = 1
+ RegistrationRejected::RegistrationStatus = 2</code></pre><pre><code class="language-julia hljs"># string() returns the OCPP wire value, not the Julia symbol name
+string(RegistrationAccepted)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&quot;Accepted&quot;</code></pre><pre><code class="language-julia hljs"># JSON serialization uses the wire value
+JSON.json(RegistrationAccepted)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&quot;\&quot;Accepted\&quot;&quot;</code></pre><h3 id="Structs"><a class="docs-heading-anchor" href="#Structs">Structs</a><a id="Structs-1"></a><a class="docs-heading-anchor-permalink" href="#Structs" title="Permalink"></a></h3><p>Each message type becomes a <code>Base.@kwdef</code> struct. Required fields have no default; optional fields default to <code>nothing</code>:</p><pre><code class="language-julia hljs">fieldnames(BootNotificationRequest)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(:charge_point_model, :charge_point_vendor, :charge_box_serial_number, :charge_point_serial_number, :firmware_version, :iccid, :imsi, :meter_serial_number, :meter_type)</code></pre><pre><code class="language-julia hljs">fieldtypes(BootNotificationRequest)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(String, String, Union{Nothing, String}, Union{Nothing, String}, Union{Nothing, String}, Union{Nothing, String}, Union{Nothing, String}, Union{Nothing, String}, Union{Nothing, String})</code></pre><pre><code class="language-julia hljs"># Required fields must be provided, optional fields default to nothing
+req = BootNotificationRequest(
+    charge_point_vendor = &quot;MyVendor&quot;,
+    charge_point_model = &quot;MyModel&quot;,
+)
+req.firmware_version  # optional → nothing</code></pre><p>Field names are automatically converted between <code>camelCase</code> (JSON wire format) and <code>snake_case</code> (Julia convention):</p><pre><code class="language-julia hljs">JSON.json(req)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&quot;{\&quot;chargePointModel\&quot;:\&quot;MyModel\&quot;,\&quot;chargePointVendor\&quot;:\&quot;MyVendor\&quot;,\&quot;chargeBoxSerialNumber\&quot;:null,\&quot;chargePointSerialNumber\&quot;:null,\&quot;firmwareVersion\&quot;:null,\&quot;iccid\&quot;:null,\&quot;imsi\&quot;:null,\&quot;meterSerialNumber\&quot;:null,\&quot;meterType\&quot;:null}&quot;</code></pre><p>Empty structs (like <code>HeartbeatRequest</code> with no fields) serialize as <code>{}</code>:</p><pre><code class="language-julia hljs">JSON.json(HeartbeatRequest())</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&quot;{}&quot;</code></pre><h3 id="Action-Registry"><a class="docs-heading-anchor" href="#Action-Registry">Action Registry</a><a id="Action-Registry-1"></a><a class="docs-heading-anchor-permalink" href="#Action-Registry" title="Permalink"></a></h3><p>A dictionary mapping action names to their request/response type pairs:</p><pre><code class="language-julia hljs">V16.V16_ACTIONS[&quot;BootNotification&quot;]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(request = OCPP.V16.BootNotificationRequest, response = OCPP.V16.BootNotificationResponse)</code></pre><pre><code class="language-julia hljs">V16.request_type(&quot;Heartbeat&quot;), V16.response_type(&quot;Heartbeat&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(OCPP.V16.HeartbeatRequest, OCPP.V16.HeartbeatResponse)</code></pre><h2 id="How-V16-Schemas-Work"><a class="docs-heading-anchor" href="#How-V16-Schemas-Work">How V16 Schemas Work</a><a id="How-V16-Schemas-Work-1"></a><a class="docs-heading-anchor-permalink" href="#How-V16-Schemas-Work" title="Permalink"></a></h2><p>V16 schemas are <strong>flat</strong> — each <code>.json</code> file defines a single request or response with all properties inline. Here is a simplified view of <code>BootNotification.json</code>:</p><pre><code class="language-json hljs">{
+  &quot;title&quot;: &quot;BootNotificationRequest&quot;,
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {
+    &quot;chargePointVendor&quot;: { &quot;type&quot;: &quot;string&quot;, &quot;maxLength&quot;: 20 },
+    &quot;chargePointModel&quot;:  { &quot;type&quot;: &quot;string&quot;, &quot;maxLength&quot;: 20 },
+    &quot;firmwareVersion&quot;:   { &quot;type&quot;: &quot;string&quot;, &quot;maxLength&quot;: 50 }
+  },
+  &quot;required&quot;: [&quot;chargePointVendor&quot;, &quot;chargePointModel&quot;]
+}</code></pre><p>This becomes:</p><pre><code class="language-julia hljs"># Generated by schema_reader.jl via Core.eval
+@kwdef struct BootNotificationRequest
+    charge_point_vendor::String       # required (from &quot;required&quot; array)
+    charge_point_model::String        # required
+    firmware_version::Union{String, Nothing} = nothing  # optional
+end</code></pre><h3 id="The-V16-Registry-Problem"><a class="docs-heading-anchor" href="#The-V16-Registry-Problem">The V16 Registry Problem</a><a id="The-V16-Registry-Problem-1"></a><a class="docs-heading-anchor-permalink" href="#The-V16-Registry-Problem" title="Permalink"></a></h3><p>V16 schemas have a limitation: enum values appear inline as <code>&quot;enum&quot;: [&quot;Accepted&quot;, &quot;Pending&quot;, &quot;Rejected&quot;]</code> without any type name. The same list <code>[&quot;Accepted&quot;, &quot;Rejected&quot;]</code> might appear in several schemas meaning different things.</p><p>OCPP.jl solves this with a <strong>hand-curated registry</strong> in <code>src/v16/registries.jl</code>:</p><pre><code class="language-julia hljs">const V16_ENUM_REGISTRY = Dict{Vector{String}, Tuple{Symbol, String}}(
+    [&quot;Accepted&quot;, &quot;Pending&quot;, &quot;Rejected&quot;] =&gt; (:RegistrationStatus, &quot;Registration&quot;),
+    [&quot;Accepted&quot;, &quot;Rejected&quot;]            =&gt; (:GenericStatus, &quot;Generic&quot;),
+    # ... 32 enum types total
+)</code></pre><p>This tells the generator: &quot;when you see the sorted values <code>[&quot;Accepted&quot;, &quot;Pending&quot;, &quot;Rejected&quot;]</code>, create an enum called <code>RegistrationStatus</code> with prefix <code>Registration</code>&quot; — yielding members <code>RegistrationAccepted</code>, <code>RegistrationPending</code>, <code>RegistrationRejected</code>.</p><p>Similarly, nested object types (like <code>idTagInfo</code> which appears in multiple V16 messages) are mapped via <code>V16_NESTED_TYPE_NAMES</code>:</p><pre><code class="language-julia hljs">const V16_NESTED_TYPE_NAMES = Dict{String, Symbol}(
+    &quot;idTagInfo&quot; =&gt; :IdTagInfo,
+    # ...
+)</code></pre><h3 id="V16-Generation-Pipeline"><a class="docs-heading-anchor" href="#V16-Generation-Pipeline">V16 Generation Pipeline</a><a id="V16-Generation-Pipeline-1"></a><a class="docs-heading-anchor-permalink" href="#V16-Generation-Pipeline" title="Permalink"></a></h3><p>The entry point is <code>generate_types!(mod, schema_dir, enum_registry, nested_type_names, :V16_ACTIONS)</code>:</p><ol><li><strong>Read</strong> all <code>.json</code> schema files from <code>src/v16/schemas/</code></li><li><strong>Collect enums</strong> — walk every property in every schema, match <code>&quot;enum&quot;</code> arrays against <code>V16_ENUM_REGISTRY</code>, generate <code>@enum</code> types</li><li><strong>Collect nested types</strong> — find object-typed properties named in <code>V16_NESTED_TYPE_NAMES</code>, topologically sort by dependencies, generate structs</li><li><strong>Generate action structs</strong> — one struct per schema file</li><li><strong>Build registry</strong> — <code>V16_ACTIONS</code> dict + <code>request_type()</code>/<code>response_type()</code> helpers</li></ol><h2 id="How-V201-Schemas-Work"><a class="docs-heading-anchor" href="#How-V201-Schemas-Work">How V201 Schemas Work</a><a id="How-V201-Schemas-Work-1"></a><a class="docs-heading-anchor-permalink" href="#How-V201-Schemas-Work" title="Permalink"></a></h2><p>V201 schemas are <strong>self-describing</strong> — each file contains a <code>definitions</code> section with explicitly named types, cross-referenced via <code>$ref</code>. Here is a simplified view of <code>BootNotificationRequest.json</code>:</p><pre><code class="language-json hljs">{
+  &quot;definitions&quot;: {
+    &quot;BootReasonEnumType&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;enum&quot;: [&quot;ApplicationReset&quot;, &quot;FirmwareUpdate&quot;, &quot;PowerUp&quot;, &quot;...&quot;]
+    },
+    &quot;ChargingStationType&quot;: {
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;properties&quot;: {
+        &quot;model&quot;:      { &quot;type&quot;: &quot;string&quot; },
+        &quot;vendorName&quot;: { &quot;type&quot;: &quot;string&quot; },
+        &quot;modem&quot;:      { &quot;$ref&quot;: &quot;#/definitions/ModemType&quot; }
+      },
+      &quot;required&quot;: [&quot;model&quot;, &quot;vendorName&quot;]
+    },
+    &quot;ModemType&quot;: {
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;properties&quot;: {
+        &quot;iccid&quot;: { &quot;type&quot;: &quot;string&quot; },
+        &quot;imsi&quot;:  { &quot;type&quot;: &quot;string&quot; }
+      }
+    }
+  },
+  &quot;properties&quot;: {
+    &quot;reason&quot;:          { &quot;$ref&quot;: &quot;#/definitions/BootReasonEnumType&quot; },
+    &quot;chargingStation&quot;: { &quot;$ref&quot;: &quot;#/definitions/ChargingStationType&quot; }
+  },
+  &quot;required&quot;: [&quot;reason&quot;, &quot;chargingStation&quot;]
+}</code></pre><p>This single file produces <strong>four</strong> Julia types:</p><pre><code class="language-julia hljs"># 1. Enum (from BootReasonEnumType definition)
+@enum BootReason BootReasonApplicationReset BootReasonFirmwareUpdate BootReasonPowerUp ...
+
+# 2. Shared struct (from ModemType definition — dependency of ChargingStationType)
+@kwdef struct Modem
+    iccid::Union{String, Nothing} = nothing
+    imsi::Union{String, Nothing} = nothing
+end
+
+# 3. Shared struct (from ChargingStationType definition)
+@kwdef struct ChargingStation
+    model::String
+    vendor_name::String
+    modem::Union{Modem, Nothing} = nothing
+end
+
+# 4. Action struct (the top-level message)
+@kwdef struct BootNotificationRequest
+    reason::BootReason
+    charging_station::ChargingStation
+end</code></pre><h3 id="Deduplication-Across-Schemas"><a class="docs-heading-anchor" href="#Deduplication-Across-Schemas">Deduplication Across Schemas</a><a id="Deduplication-Across-Schemas-1"></a><a class="docs-heading-anchor-permalink" href="#Deduplication-Across-Schemas" title="Permalink"></a></h3><p>The same <code>definitions</code> (like <code>ChargingStationType</code> or <code>CustomDataType</code>) appear in many schema files. The generator merges all definitions into one dict first, so each shared type is created only once:</p><pre><code class="language-julia hljs"># CustomData appears in nearly every V201 schema, but is generated once
+OCPP.V201.CustomData</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">OCPP.V201.CustomData</code></pre><h3 id="Automatic-Name-Derivation"><a class="docs-heading-anchor" href="#Automatic-Name-Derivation">Automatic Name Derivation</a><a id="Automatic-Name-Derivation-1"></a><a class="docs-heading-anchor-permalink" href="#Automatic-Name-Derivation" title="Permalink"></a></h3><p>V201 needs <strong>no hand-curated registry</strong> because the schema names are descriptive:</p><table><tr><th style="text-align: right">Definition name</th><th style="text-align: right">Julia type</th><th style="text-align: right">Rule</th></tr><tr><td style="text-align: right"><code>BootReasonEnumType</code></td><td style="text-align: right"><code>BootReason</code></td><td style="text-align: right">Strip <code>EnumType</code> suffix</td></tr><tr><td style="text-align: right"><code>ChargingStationType</code></td><td style="text-align: right"><code>ChargingStation</code></td><td style="text-align: right">Strip <code>Type</code> suffix</td></tr><tr><td style="text-align: right"><code>ModemType</code></td><td style="text-align: right"><code>Modem</code></td><td style="text-align: right">Strip <code>Type</code> suffix</td></tr></table><h3 id="Enum-Prefix-Rules"><a class="docs-heading-anchor" href="#Enum-Prefix-Rules">Enum Prefix Rules</a><a id="Enum-Prefix-Rules-1"></a><a class="docs-heading-anchor-permalink" href="#Enum-Prefix-Rules" title="Permalink"></a></h3><p>Enum members are prefixed when needed to avoid collisions:</p><ul><li><strong>Cross-enum collisions</strong>: If <code>&quot;Accepted&quot;</code> appears in multiple enums, both get prefixed (e.g., <code>RegistrationAccepted</code>, <code>GenericAccepted</code>)</li><li><strong>Type name collisions</strong>: If a member name like <code>&quot;TransactionEvent&quot;</code> would clash with a generated type name, the enum gets prefixed (e.g., <code>MessageTriggerTransactionEvent</code>)</li><li><strong>Base name collisions</strong>: If a member would shadow Julia builtins like <code>nothing</code> or <code>missing</code>, it gets prefixed</li></ul><pre><code class="language-julia hljs"># MessageTrigger enum — members are prefixed because &quot;TransactionEvent&quot;
+# would collide with the TransactionEvent enum type
+instances(OCPP.V201.MessageTrigger) |&gt; collect</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">11-element Vector{OCPP.V201.MessageTrigger}:
+ MessageTriggerBootNotification::MessageTrigger = 0
+ MessageTriggerLogStatusNotification::MessageTrigger = 1
+ MessageTriggerFirmwareStatusNotification::MessageTrigger = 2
+ MessageTriggerHeartbeat::MessageTrigger = 3
+ MessageTriggerMeterValues::MessageTrigger = 4
+ MessageTriggerSignChargingStationCertificate::MessageTrigger = 5
+ MessageTriggerSignV2GCertificate::MessageTrigger = 6
+ MessageTriggerStatusNotification::MessageTrigger = 7
+ MessageTriggerTransactionEvent::MessageTrigger = 8
+ MessageTriggerSignCombinedCertificate::MessageTrigger = 9
+ MessageTriggerPublishFirmwareStatusNotification::MessageTrigger = 10</code></pre><h3 id="V201-Generation-Pipeline"><a class="docs-heading-anchor" href="#V201-Generation-Pipeline">V201 Generation Pipeline</a><a id="V201-Generation-Pipeline-1"></a><a class="docs-heading-anchor-permalink" href="#V201-Generation-Pipeline" title="Permalink"></a></h3><p>The entry point is <code>generate_types_from_definitions!(mod, schema_dir, :V201_ACTIONS)</code>:</p><ol><li><strong>Read</strong> all <code>.json</code> schema files from <code>src/v201/schemas/</code></li><li><strong>Merge definitions</strong> — collect every <code>definitions</code> section across all files into one dict, deduplicating by name</li><li><strong>Classify</strong> — separate into enums (have <code>&quot;enum&quot;</code> key) and objects (have <code>&quot;properties&quot;</code>)</li><li><strong>Derive names</strong> — map definition names to Julia type names (strip <code>EnumType</code>/<code>Type</code> suffixes)</li><li><strong>Generate enums</strong> — determine prefixes, create <code>@enum</code> types with string conversion</li><li><strong>Generate shared structs</strong> — topologically sort by <code>$ref</code> dependencies, generate in dependency order (leaves first)</li><li><strong>Generate action structs</strong> — one struct per schema file</li><li><strong>Build registry</strong> — <code>V201_ACTIONS</code> dict + <code>request_type()</code>/<code>response_type()</code> helpers</li></ol><h2 id="How-Core.eval-Works"><a class="docs-heading-anchor" href="#How-Core.eval-Works">How <code>Core.eval</code> Works</a><a id="How-Core.eval-Works-1"></a><a class="docs-heading-anchor-permalink" href="#How-Core.eval-Works" title="Permalink"></a></h2><p>All types are injected into the target module using <code>Core.eval(mod, expr)</code>. This is necessary because the types are determined at load time from data (schema files), not from source code.</p><p>For an enum, the generator produces roughly:</p><pre><code class="language-julia hljs"># Evaluated inside the V16 or V201 module
+Core.eval(mod, :(@enum BootReason BootReasonPowerUp BootReasonApplicationReset ...))
+Core.eval(mod, :(export BootReason, BootReasonPowerUp, ...))
+
+# Forward lookup: enum member → OCPP wire string
+Core.eval(mod, :(const _BOOTREASON_TO_STR = Dict(BootReasonPowerUp =&gt; &quot;PowerUp&quot;, ...)))
+
+# Reverse lookup: OCPP wire string → enum member
+Core.eval(mod, :(const _STR_TO_BOOTREASON = Dict(&quot;PowerUp&quot; =&gt; BootReasonPowerUp, ...)))
+
+# JSON serialization
+Core.eval(mod, :(Base.string(x::BootReason) = _BOOTREASON_TO_STR[x]))
+Core.eval(mod, :(StructUtils.lift(::Type{BootReason}, s::AbstractString) = _STR_TO_BOOTREASON[String(s)]))</code></pre><p>For a struct:</p><pre><code class="language-julia hljs">Core.eval(mod, :(@kwdef struct BootNotificationRequest
+    reason::BootReason
+    charging_station::ChargingStation
+    custom_data::Union{CustomData, Nothing} = nothing
+end))
+Core.eval(mod, :(export BootNotificationRequest))
+
+# camelCase ↔ snake_case field name mapping
+Core.eval(mod, :(StructUtils.fieldtags(::StructUtils.StructStyle, ::Type{BootNotificationRequest}) =
+    (charging_station = (json = (name = &quot;chargingStation&quot;,),),
+     custom_data = (json = (name = &quot;customData&quot;,),))))</code></pre><h2 id="Inspecting-What-Was-Generated"><a class="docs-heading-anchor" href="#Inspecting-What-Was-Generated">Inspecting What Was Generated</a><a id="Inspecting-What-Was-Generated-1"></a><a class="docs-heading-anchor-permalink" href="#Inspecting-What-Was-Generated" title="Permalink"></a></h2><p>You can explore all generated types at runtime:</p><pre><code class="language-julia hljs"># All V16 action names
+sort(collect(keys(V16.V16_ACTIONS)))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">28-element Vector{String}:
+ &quot;Authorize&quot;
+ &quot;BootNotification&quot;
+ &quot;CancelReservation&quot;
+ &quot;ChangeAvailability&quot;
+ &quot;ChangeConfiguration&quot;
+ &quot;ClearCache&quot;
+ &quot;ClearChargingProfile&quot;
+ &quot;DataTransfer&quot;
+ &quot;DiagnosticsStatusNotification&quot;
+ &quot;FirmwareStatusNotification&quot;
+ ⋮
+ &quot;Reset&quot;
+ &quot;SendLocalList&quot;
+ &quot;SetChargingProfile&quot;
+ &quot;StartTransaction&quot;
+ &quot;StatusNotification&quot;
+ &quot;StopTransaction&quot;
+ &quot;TriggerMessage&quot;
+ &quot;UnlockConnector&quot;
+ &quot;UpdateFirmware&quot;</code></pre><pre><code class="language-julia hljs"># Total types per version
+v16_names = filter(n -&gt; getfield(OCPP.V16, n) isa DataType, names(OCPP.V16))
+v201_names = filter(n -&gt; getfield(OCPP.V201, n) isa DataType, names(OCPP.V201))
+length(v16_names), length(v201_names)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(95, 271)</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../10-guide/">« Usage Guide</a><a class="docs-footer-nextpage" href="../20-architecture/">Architecture »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Monday 23 March 2026 19:00">Monday 23 March 2026</span>. Using Julia version 1.12.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
