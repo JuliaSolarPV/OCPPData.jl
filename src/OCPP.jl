@@ -18,28 +18,22 @@ include("schema_reader.jl")
 module V16
 using StructUtils
 using JSON
-using ..OCPP: generate_types!
+using ..OCPP: @generate_ocpp_types
 
 include("v16/registries.jl")
 
 const _SCHEMA_DIR = joinpath(@__DIR__, "v16", "schemas")
-generate_types!(
-    @__MODULE__,
-    _SCHEMA_DIR,
-    V16_ENUM_REGISTRY,
-    V16_NESTED_TYPE_NAMES,
-    :V16_ACTIONS,
-)
+@generate_ocpp_types _SCHEMA_DIR V16_ENUM_REGISTRY V16_NESTED_TYPE_NAMES :V16_ACTIONS
 end # module V16
 
 # OCPP 2.0.1 submodule
 module V201
 using StructUtils
 using JSON
-using ..OCPP: generate_types_from_definitions!
+using ..OCPP: @generate_ocpp_types_from_definitions
 
 const _SCHEMA_DIR = joinpath(@__DIR__, "v201", "schemas")
-generate_types_from_definitions!(@__MODULE__, _SCHEMA_DIR, :V201_ACTIONS)
+@generate_ocpp_types_from_definitions _SCHEMA_DIR :V201_ACTIONS
 end # module V201
 
 # Schema validation
