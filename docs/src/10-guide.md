@@ -8,7 +8,6 @@ OCPP.jl provides typed Julia structs for every OCPP message. Types live in versi
 using OCPP
 using OCPP.V16  # brings BootNotificationRequest, HeartbeatRequest, etc. into scope
 import JSON     # use import (not using) to avoid conflict with V201's JSON enum member
-nothing # hide
 ```
 
 ### Constructing Messages
