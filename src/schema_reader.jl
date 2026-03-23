@@ -26,7 +26,7 @@ function read_schemas(schema_dir::String)
     for fname in readdir(schema_dir)
         endswith(fname, ".json") || continue
         path = joinpath(schema_dir, fname)
-        schema = JSON3.read(read(path, String), Dict{String,Any})
+        schema = JSON.parse(read(path, String), Dict{String,Any})
         title = get(schema, "title", replace(fname, ".json" => ""))
         schemas[title] = schema
     end
@@ -68,7 +68,7 @@ function collect_enums(schemas, enum_registry::Dict{Vector{String},Tuple{Symbol,
 
     function _walk_enum_props(props)
         for (_, prop) in props
-            prop isa Dict || continue
+            prop isa AbstractDict || continue
             if haskey(prop, "enum")
                 values = sort(String[string(v) for v in prop["enum"]])
                 if values ∉ seen
@@ -90,7 +90,7 @@ function collect_enums(schemas, enum_registry::Dict{Vector{String},Tuple{Symbol,
             end
             if get(prop, "type", nothing) == "array" && haskey(prop, "items")
                 items = prop["items"]
-                if items isa Dict && get(items, "type", nothing) == "object"
+                if items isa AbstractDict && get(items, "type", nothing) == "object"
                     if haskey(items, "properties")
                         _walk_enum_props(items["properties"])
                     end
@@ -113,7 +113,7 @@ end
 
 """Map a JSON schema property to a Julia type expression."""
 function _json_type_to_julia(
-    prop::Dict{String,Any},
+    prop::AbstractDict{String,Any},
     field_name::String,
     enum_lookup::Dict{Vector{String},Symbol},
     nested_type_names::Dict{String,Symbol},
@@ -142,7 +142,7 @@ function _json_type_to_julia(
         return :(Dict{String,Any})
     elseif jtype == "array"
         items = get(prop, "items", Dict{String,Any}())
-        if items isa Dict
+        if items isa AbstractDict
             item_type = get(items, "type", "string")
             if item_type == "object"
                 if haskey(nested_type_names, field_name)
@@ -169,7 +169,7 @@ end
 
 """Extract field definitions from a JSON schema."""
 function struct_fields_from_schema(
-    schema::Dict{String,Any},
+    schema::AbstractDict{String,Any},
     enum_lookup::Dict{Vector{String},Symbol},
     nested_type_names::Dict{String,Symbol},
 )
@@ -180,7 +180,7 @@ function struct_fields_from_schema(
         NamedTuple{(:json_name, :jl_name, :type, :required),Tuple{String,Symbol,Any,Bool}}[]
 
     for (json_name, prop) in props
-        prop isa Dict || continue
+        prop isa AbstractDict || continue
         jl_name = Symbol(_camel_to_snake(json_name))
         jl_type = _json_type_to_julia(prop, json_name, enum_lookup, nested_type_names)
         is_required = json_name in required_set
@@ -213,7 +213,7 @@ function collect_nested_types(
 
     function _walk_nested_props(props)
         for (name, prop) in props
-            prop isa Dict || continue
+            prop isa AbstractDict || continue
             ptype = get(prop, "type", nothing)
 
             if ptype == "object" && haskey(prop, "properties")
@@ -226,7 +226,7 @@ function collect_nested_types(
                 end
             elseif ptype == "array" && haskey(prop, "items")
                 items = prop["items"]
-                if items isa Dict &&
+                if items isa AbstractDict &&
                    get(items, "type", nothing) == "object" &&
                    haskey(items, "properties")
                     if haskey(nested_type_names, name)
@@ -296,7 +296,7 @@ end
 # Code generation via Core.eval
 # ---------------------------------------------------------------------------
 
-"""Generate an @enum type with StructTypes JSON serialization in the given module."""
+"""Generate an @enum type with JSON serialization in the given module."""
 function generate_enum!(mod::Module, name::Symbol, members::Vector{Pair{Symbol,String}})
     member_syms = [m.first for m in members]
     fwd_name = Symbol("_", uppercase(string(name)), "_TO_STR")
@@ -314,23 +314,18 @@ function generate_enum!(mod::Module, name::Symbol, members::Vector{Pair{Symbol,S
     rev_pairs = [:($(m.second) => $(m.first)) for m in members]
     Core.eval(mod, :(const $rev_name = Dict{String,$name}($(rev_pairs...))))
 
-    Core.eval(mod, :(StructTypes.StructType(::Type{$name}) = StructTypes.StringType()))
-    Core.eval(mod, :(function StructTypes.construct(::Type{$name}, s::String)
-        return $rev_name[s]
-    end))
-    Core.eval(mod, :(function StructTypes.construct(::Type{$name}, sym::Symbol)
-        return $rev_name[String(sym)]
-    end))
+    # Base.string returns the OCPP wire value (used by JSON.lower default for Enums)
     Core.eval(mod, :(function Base.string(x::$name)
         return $fwd_name[x]
     end))
-    Core.eval(mod, :(function JSON3.write(io::IO, x::$name)
-        return JSON3.write(io, $fwd_name[x])
+    # StructUtils.lift: deserialize string → enum
+    Core.eval(mod, :(function StructUtils.lift(::Type{$name}, s::AbstractString)
+        return $rev_name[String(s)]
     end))
     return nothing
 end
 
-"""Generate a @kwdef struct with StructTypes.Struct() and camelCase name mapping."""
+"""Generate a @kwdef struct with JSON camelCase name mapping via StructUtils."""
 function generate_struct!(mod::Module, name::Symbol, fields)
     field_exprs = Expr[]
     for f in fields
@@ -354,21 +349,27 @@ function generate_struct!(mod::Module, name::Symbol, fields)
 
     Core.eval(mod, Expr(:export, name))
 
-    Core.eval(mod, :(StructTypes.StructType(::Type{$name}) = StructTypes.Struct()))
+    # Empty structs need explicit structlike override for JSON serialization
+    if isempty(fields)
+        Core.eval(mod, :(StructUtils.structlike(::Type{$name}) = true))
+    end
 
-    name_pairs = Tuple{Symbol,Symbol}[]
+    # Build fieldtags for camelCase ↔ snake_case mapping
+    name_pairs = Tuple{Symbol,String}[]
     for f in fields
-        camel = Symbol(f.json_name)
-        if camel != f.jl_name
+        camel = f.json_name
+        if Symbol(camel) != f.jl_name
             push!(name_pairs, (f.jl_name, camel))
         end
     end
     if !isempty(name_pairs)
-        pairs_expr = Expr(
-            :tuple,
-            [Expr(:tuple, QuoteNode(p[1]), QuoteNode(p[2])) for p in name_pairs]...,
+        keys_tuple = Tuple(p[1] for p in name_pairs)
+        vals_tuple = Tuple((json = (name = p[2],),) for p in name_pairs)
+        tags_val = NamedTuple{keys_tuple}(vals_tuple)
+        Core.eval(
+            mod,
+            :(StructUtils.fieldtags(::StructUtils.StructStyle, ::Type{$name}) = $tags_val),
         )
-        Core.eval(mod, :(StructTypes.names(::Type{$name}) = $pairs_expr))
     end
     return nothing
 end
@@ -426,9 +427,9 @@ function generate_types!(
         generate_struct!(mod, struct_name, fields)
 
         base = if endswith(title, "Response")
-            title[1:(end - 8)]
+            title[1:(end-8)]
         elseif endswith(title, "Request")
-            title[1:(end - 7)]
+            title[1:(end-7)]
         else
             title
         end
@@ -491,7 +492,7 @@ function merge_definitions(schemas)
     for (_, schema) in schemas
         defs = get(schema, "definitions", Dict{String,Any}())
         for (name, defn) in defs
-            defn isa Dict || continue
+            defn isa AbstractDict || continue
             if !haskey(all_defs, name)
                 all_defs[name] = defn
             end
@@ -506,9 +507,9 @@ Derive a Julia type name from a v201 definition name.
 """
 function _def_to_julia_name(def_name::String)
     if endswith(def_name, "EnumType")
-        return Symbol(def_name[1:(end - 8)])
+        return Symbol(def_name[1:(end-8)])
     elseif endswith(def_name, "Type")
-        return Symbol(def_name[1:(end - 4)])
+        return Symbol(def_name[1:(end-4)])
     else
         return Symbol(def_name)
     end
@@ -522,7 +523,7 @@ Derive an enum member prefix from a v201 definition name.
 function _enum_prefix(def_name::String)
     base = replace(def_name, "EnumType" => "")
     if endswith(base, "Status")
-        return base[1:(end - 6)]
+        return base[1:(end-6)]
     end
     return base
 end
@@ -531,7 +532,10 @@ end
 Resolve a property (which may contain `\$ref`) to a Julia type symbol.
 `def_type_map` maps definition names to Julia type symbols.
 """
-function _resolve_ref_type(prop::Dict{String,Any}, def_type_map::Dict{String,Symbol})
+function _resolve_ref_type(
+    prop::AbstractDict{String,Any},
+    def_type_map::Dict{String,Symbol},
+)
     if haskey(prop, "\$ref")
         ref = prop["\$ref"]::String
         def_name = last(split(ref, "/"))
@@ -549,7 +553,7 @@ function _resolve_ref_type(prop::Dict{String,Any}, def_type_map::Dict{String,Sym
         return :Bool
     elseif jtype == "array"
         items = get(prop, "items", Dict{String,Any}())
-        if items isa Dict
+        if items isa AbstractDict
             if haskey(items, "\$ref")
                 ref = items["\$ref"]::String
                 def_name = last(split(ref, "/"))
@@ -571,7 +575,10 @@ function _resolve_ref_type(prop::Dict{String,Any}, def_type_map::Dict{String,Sym
 end
 
 """Extract struct fields from a v201 schema/definition, resolving `\$ref`."""
-function fields_from_ref_schema(schema::Dict{String,Any}, def_type_map::Dict{String,Symbol})
+function fields_from_ref_schema(
+    schema::AbstractDict{String,Any},
+    def_type_map::Dict{String,Symbol},
+)
     props = get(schema, "properties", Dict{String,Any}())
     required_set = Set{String}(get(schema, "required", String[]))
 
@@ -579,13 +586,18 @@ function fields_from_ref_schema(schema::Dict{String,Any}, def_type_map::Dict{Str
         NamedTuple{(:json_name, :jl_name, :type, :required),Tuple{String,Symbol,Any,Bool}}[]
 
     for (json_name, prop) in props
-        prop isa Dict || continue
+        prop isa AbstractDict || continue
         jl_name = Symbol(_camel_to_snake(json_name))
         jl_type = _resolve_ref_type(prop, def_type_map)
         is_required = json_name in required_set
         push!(
             fields,
-            (json_name = json_name, jl_name = jl_name, type = jl_type, required = is_required),
+            (
+                json_name = json_name,
+                jl_name = jl_name,
+                type = jl_type,
+                required = is_required,
+            ),
         )
     end
 
@@ -602,7 +614,7 @@ function _topo_sort_defs(names::Vector{String}, all_defs::Dict{String,Dict{Strin
         defn = all_defs[name]
         props = get(defn, "properties", Dict{String,Any}())
         for (_, prop) in props
-            prop isa Dict || continue
+            prop isa AbstractDict || continue
             if haskey(prop, "\$ref")
                 ref_name = last(split(prop["\$ref"]::String, "/"))
                 if ref_name in name_set && ref_name != name
@@ -611,7 +623,7 @@ function _topo_sort_defs(names::Vector{String}, all_defs::Dict{String,Dict{Strin
             end
             if get(prop, "type", nothing) == "array"
                 items = get(prop, "items", Dict{String,Any}())
-                if items isa Dict && haskey(items, "\$ref")
+                if items isa AbstractDict && haskey(items, "\$ref")
                     ref_name = last(split(items["\$ref"]::String, "/"))
                     if ref_name in name_set && ref_name != name
                         push!(deps[name], ref_name)
@@ -694,8 +706,21 @@ function generate_types_from_definitions!(
 
     # Detect which enum values appear in multiple enums (need prefixing)
     # Also detect values that shadow Base names
-    _BASE_NAMES = Set(["string", "print", "show", "read", "write", "open",
-        "close", "nothing", "missing", "true", "false", "Int", "Float64"])
+    _BASE_NAMES = Set([
+        "string",
+        "print",
+        "show",
+        "read",
+        "write",
+        "open",
+        "close",
+        "nothing",
+        "missing",
+        "true",
+        "false",
+        "Int",
+        "Float64",
+    ])
     value_count = Dict{String,Int}()
     for name in enum_def_names
         for v in all_defs[name]["enum"]
@@ -710,8 +735,9 @@ function generate_types_from_definitions!(
         defn = all_defs[def_name]
         values = [string(v) for v in defn["enum"]]
 
-        needs_prefix = any(v -> value_count[v] > 1, values) ||
-                       any(v -> _ocpp_string_to_identifier(v) in _BASE_NAMES, values)
+        needs_prefix =
+            any(v -> value_count[v] > 1, values) ||
+            any(v -> _ocpp_string_to_identifier(v) in _BASE_NAMES, values)
         prefix = if haskey(prefix_overrides, def_name)
             prefix_overrides[def_name]
         elseif needs_prefix
@@ -745,9 +771,9 @@ function generate_types_from_definitions!(
         generate_struct!(mod, struct_name, fields)
 
         base = if endswith(title, "Response")
-            title[1:(end - 8)]
+            title[1:(end-8)]
         elseif endswith(title, "Request")
-            title[1:(end - 7)]
+            title[1:(end-7)]
         else
             title
         end

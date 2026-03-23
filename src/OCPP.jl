@@ -1,7 +1,7 @@
 module OCPP
 
-using JSON3
-using StructTypes
+using JSON
+using StructUtils
 using UUIDs
 using PrecompileTools
 
@@ -16,8 +16,8 @@ include("schema_reader.jl")
 
 # OCPP 1.6 submodule
 module V16
-using StructTypes
-using JSON3
+using StructUtils
+using JSON
 using ..OCPP: generate_types!
 
 include("v16/registries.jl")
@@ -34,8 +34,8 @@ end # module V16
 
 # OCPP 2.0.1 submodule
 module V201
-using StructTypes
-using JSON3
+using StructUtils
+using JSON
 using ..OCPP: generate_types_from_definitions!
 
 const _SCHEMA_DIR = joinpath(@__DIR__, "v201", "schemas")
@@ -58,14 +58,14 @@ export V16, V201
 
     # V16 type construction and JSON round-trip
     req = V16.HeartbeatRequest()
-    JSON3.write(req)
+    JSON.json(req)
 
     boot = V16.BootNotificationRequest(
         charge_point_vendor = "TestVendor",
         charge_point_model = "TestModel",
     )
-    json_str = JSON3.write(boot)
-    JSON3.read(json_str, V16.BootNotificationRequest)
+    json_str = JSON.json(boot)
+    JSON.parse(json_str, V16.BootNotificationRequest)
 
     # Action registry
     V16.request_type("Heartbeat")

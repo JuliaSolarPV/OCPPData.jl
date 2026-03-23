@@ -8,7 +8,7 @@ OCPP-J codec: encode/decode between OCPPMessage types and JSON wire format.
 Encode a Call message to OCPP-J JSON array format: `[2, unique_id, action, payload]`.
 """
 function encode(msg::Call)::String
-    return JSON3.write([msg.message_type_id, msg.unique_id, msg.action, msg.payload],)
+    return JSON.json([msg.message_type_id, msg.unique_id, msg.action, msg.payload],)
 end
 
 """
@@ -17,7 +17,7 @@ end
 Encode a CallResult to OCPP-J JSON array format: `[3, unique_id, payload]`.
 """
 function encode(msg::CallResult)::String
-    return JSON3.write([msg.message_type_id, msg.unique_id, msg.payload],)
+    return JSON.json([msg.message_type_id, msg.unique_id, msg.payload],)
 end
 
 """
@@ -27,7 +27,7 @@ Encode a CallError to OCPP-J JSON array format:
 `[4, unique_id, error_code, error_description, error_details]`.
 """
 function encode(msg::CallError)::String
-    return JSON3.write([
+    return JSON.json([
         msg.message_type_id,
         msg.unique_id,
         msg.error_code,
@@ -43,7 +43,7 @@ Decode a raw OCPP-J JSON string into the appropriate OCPPMessage subtype.
 Dispatches on the first element (message type ID): 2=Call, 3=CallResult, 4=CallError.
 """
 function decode(raw::String)::OCPPMessage
-    arr = JSON3.read(raw)
+    arr = JSON.parse(raw)
     type_id = arr[1]
     if type_id == 2
         return Call(2, String(arr[2]), String(arr[3]), _to_dict(arr[4]))
@@ -71,7 +71,7 @@ function generate_unique_id()::String
     return string(uuid4())
 end
 
-# Convert JSON3.Object (or any AbstractDict) to Dict{String,Any}, recursively.
+# Convert any AbstractDict to Dict{String,Any}, recursively.
 function _to_dict(obj)::Dict{String,Any}
     result = Dict{String,Any}()
     for (k, v) in pairs(obj)
@@ -81,14 +81,10 @@ function _to_dict(obj)::Dict{String,Any}
 end
 
 function _convert_value(v)
-    if v isa JSON3.Object || v isa AbstractDict
+    if v isa AbstractDict
         return _to_dict(v)
-    elseif v isa JSON3.Array || v isa AbstractVector
-        out = Any[]
-        for item in v
-            push!(out, _convert_value(item))
-        end
-        return out
+    elseif v isa AbstractVector
+        return Any[_convert_value(item) for item in v]
     else
         return v
     end

@@ -12,46 +12,46 @@ end
 
 @testitem "V201 enum JSON3 write" tags = [:fast] begin
     using OCPP.V201
-    using JSON3
-    @test JSON3.write(BootReasonPowerUp) == "\"PowerUp\""
-    @test JSON3.write(RegistrationAccepted) == "\"Accepted\""
-    @test JSON3.write(A) == "\"A\""
+    import JSON
+    @test JSON.json(BootReasonPowerUp) == "\"PowerUp\""
+    @test JSON.json(RegistrationAccepted) == "\"Accepted\""
+    @test JSON.json(A) == "\"A\""
 end
 
 @testitem "V201 enum JSON3 read" tags = [:fast] begin
     using OCPP.V201
-    using JSON3
-    @test JSON3.read("\"PowerUp\"", BootReason) == BootReasonPowerUp
-    @test JSON3.read("\"Accepted\"", RegistrationStatus) == RegistrationAccepted
-    @test JSON3.read("\"Immediate\"", Reset) == Immediate
+    import JSON
+    @test JSON.parse("\"PowerUp\"", BootReason) == BootReasonPowerUp
+    @test JSON.parse("\"Accepted\"", RegistrationStatus) == RegistrationAccepted
+    @test JSON.parse("\"Immediate\"", Reset) == Immediate
 end
 
 @testitem "V201 enum round-trip for BootReason" tags = [:fast] begin
     using OCPP.V201
-    using JSON3
+    import JSON
     for val in instances(BootReason)
-        @test JSON3.read(JSON3.write(val), BootReason) == val
+        @test JSON.parse(JSON.json(val), BootReason) == val
     end
 end
 
 @testitem "V201 enum round-trip for ConnectorStatus" tags = [:fast] begin
     using OCPP.V201
-    using JSON3
+    import JSON
     for val in instances(ConnectorStatus)
-        @test JSON3.read(JSON3.write(val), ConnectorStatus) == val
+        @test JSON.parse(JSON.json(val), ConnectorStatus) == val
     end
 end
 
 @testitem "V201 enum round-trip for Measurand" tags = [:fast] begin
     using OCPP.V201
-    using JSON3
+    import JSON
     for val in instances(Measurand)
-        @test JSON3.read(JSON3.write(val), Measurand) == val
+        @test JSON.parse(JSON.json(val), Measurand) == val
     end
 end
 
 @testitem "V201 enum invalid string throws" tags = [:fast] begin
     using OCPP.V201
-    using JSON3
-    @test_throws KeyError JSON3.read("\"InvalidValue\"", RegistrationStatus)
+    import JSON
+    @test_throws KeyError JSON.parse("\"InvalidValue\"", RegistrationStatus)
 end

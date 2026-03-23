@@ -11,12 +11,12 @@ end
 
 @testitem "BootNotificationRequest JSON camelCase output" tags = [:fast] begin
     using OCPP.V16
-    using JSON3
+    using JSON
     req = BootNotificationRequest(
         charge_point_vendor = "Vendor",
         charge_point_model = "Model",
     )
-    json = JSON3.write(req)
+    json = JSON.json(req)
     @test occursin("chargePointVendor", json)
     @test occursin("chargePointModel", json)
     @test !occursin("charge_point_vendor", json)
@@ -24,88 +24,88 @@ end
 
 @testitem "BootNotificationRequest JSON round-trip" tags = [:fast] begin
     using OCPP.V16
-    using JSON3
+    using JSON
     req = BootNotificationRequest(
         charge_point_vendor = "Vendor",
         charge_point_model = "Model",
         firmware_version = "1.0",
     )
-    json = JSON3.write(req)
-    req2 = JSON3.read(json, BootNotificationRequest)
+    json = JSON.json(req)
+    req2 = JSON.parse(json, BootNotificationRequest)
     @test req == req2
 end
 
 @testitem "BootNotificationResponse with enum" tags = [:fast] begin
     using OCPP.V16
-    using JSON3
+    using JSON
     resp = BootNotificationResponse(
         status = RegistrationAccepted,
         current_time = "2025-01-01T00:00:00Z",
         interval = 300,
     )
-    json = JSON3.write(resp)
+    json = JSON.json(resp)
     @test occursin("\"Accepted\"", json)
     @test occursin("currentTime", json)
-    resp2 = JSON3.read(json, BootNotificationResponse)
+    resp2 = JSON.parse(json, BootNotificationResponse)
     @test resp2.status == RegistrationAccepted
     @test resp2.interval == 300
 end
 
 @testitem "Empty struct round-trip" tags = [:fast] begin
     using OCPP.V16
-    using JSON3
+    using JSON
     req = HeartbeatRequest()
-    json = JSON3.write(req)
+    json = JSON.json(req)
     @test json == "{}"
-    req2 = JSON3.read(json, HeartbeatRequest)
+    req2 = JSON.parse(json, HeartbeatRequest)
     @test req2 isa HeartbeatRequest
 end
 
 @testitem "IdTagInfo shared sub-type" tags = [:fast] begin
     using OCPP.V16
-    using JSON3
+    using JSON
     info = IdTagInfo(status = AuthorizationAccepted, expiry_date = "2025-12-31T23:59:59Z")
-    json = JSON3.write(info)
+    json = JSON.json(info)
     @test occursin("expiryDate", json)
     @test occursin("\"Accepted\"", json)
-    info2 = JSON3.read(json, IdTagInfo)
+    info2 = JSON.parse(json, IdTagInfo)
     @test info2.status == AuthorizationAccepted
     @test info2.expiry_date == "2025-12-31T23:59:59Z"
 end
 
 @testitem "StartTransactionResponse with nested IdTagInfo" tags = [:fast] begin
     using OCPP.V16
-    using JSON3
+    using JSON
     resp = StartTransactionResponse(
         transaction_id = 42,
         id_tag_info = IdTagInfo(status = AuthorizationAccepted),
     )
-    json = JSON3.write(resp)
-    resp2 = JSON3.read(json, StartTransactionResponse)
+    json = JSON.json(resp)
+    resp2 = JSON.parse(json, StartTransactionResponse)
     @test resp2.transaction_id == 42
     @test resp2.id_tag_info.status == AuthorizationAccepted
 end
 
 @testitem "MeterValue with SampledValue" tags = [:fast] begin
     using OCPP.V16
-    using JSON3
+    using JSON
     sv = SampledValue(
         value = "100.5",
         measurand = MeasurandEnergyActiveImportRegister,
         unit = UnitkWh,
     )
     mv = MeterValue(timestamp = "2025-01-01T12:00:00Z", sampled_value = [sv])
-    json = JSON3.write(mv)
+    json = JSON.json(mv)
     @test occursin("sampledValue", json)
     @test occursin("Energy.Active.Import.Register", json)
-    mv2 = JSON3.read(json, MeterValue)
+    mv2 = JSON.parse(json, MeterValue)
     @test mv2.sampled_value[1].value == "100.5"
     @test mv2.sampled_value[1].measurand == MeasurandEnergyActiveImportRegister
 end
 
 @testitem "ChargingProfile nested struct" tags = [:fast] begin
     using OCPP.V16
-    using JSON3
+    using JSON
     profile = ChargingProfile(
         charging_profile_id = 1,
         stack_level = 0,
@@ -119,10 +119,10 @@ end
             ],
         ),
     )
-    json = JSON3.write(profile)
+    json = JSON.json(profile)
     @test occursin("chargingProfileId", json)
     @test occursin("chargingSchedulePeriod", json)
-    profile2 = JSON3.read(json, ChargingProfile)
+    profile2 = JSON.parse(json, ChargingProfile)
     @test profile2.charging_profile_id == 1
     @test length(profile2.charging_schedule.charging_schedule_period) == 2
     @test profile2.charging_schedule.charging_schedule_period[2].limit == 7400.0
@@ -130,7 +130,7 @@ end
 
 @testitem "StopTransactionRequest with optional transaction_data" tags = [:fast] begin
     using OCPP.V16
-    using JSON3
+    using JSON
     req = StopTransactionRequest(
         meter_stop = 5000,
         timestamp = "2025-01-01T13:00:00Z",
@@ -143,31 +143,31 @@ end
             ),
         ],
     )
-    json = JSON3.write(req)
-    req2 = JSON3.read(json, StopTransactionRequest)
+    json = JSON.json(req)
+    req2 = JSON.parse(json, StopTransactionRequest)
     @test req2.reason == ReasonLocal
     @test req2.transaction_data[1].sampled_value[1].value == "5000"
 end
 
 @testitem "StatusNotificationRequest" tags = [:fast] begin
     using OCPP.V16
-    using JSON3
+    using JSON
     req = StatusNotificationRequest(
         connector_id = 1,
         error_code = NoError,
         status = ChargePointAvailable,
     )
-    json = JSON3.write(req)
+    json = JSON.json(req)
     @test occursin("\"NoError\"", json)
     @test occursin("\"Available\"", json)
-    req2 = JSON3.read(json, StatusNotificationRequest)
+    req2 = JSON.parse(json, StatusNotificationRequest)
     @test req2.error_code == NoError
     @test req2.status == ChargePointAvailable
 end
 
 @testitem "SetChargingProfileRequest camelCase for csChargingProfiles" tags = [:fast] begin
     using OCPP.V16
-    using JSON3
+    using JSON
     req = SetChargingProfileRequest(
         connector_id = 1,
         cs_charging_profiles = ChargingProfile(
@@ -183,8 +183,8 @@ end
             ),
         ),
     )
-    json = JSON3.write(req)
+    json = JSON.json(req)
     @test occursin("csChargingProfiles", json)
-    req2 = JSON3.read(json, SetChargingProfileRequest)
+    req2 = JSON.parse(json, SetChargingProfileRequest)
     @test req2.cs_charging_profiles.charging_profile_id == 1
 end

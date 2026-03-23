@@ -16,11 +16,20 @@ end
     using OCPP.V201
     @test length(V201_ACTIONS) == 64
     for action in [
-        "Authorize", "BootNotification", "CancelReservation",
-        "ClearCache", "DataTransfer", "GetVariables",
-        "Heartbeat", "RequestStartTransaction", "RequestStopTransaction",
-        "Reset", "SetVariables", "TransactionEvent",
-        "UnlockConnector", "UpdateFirmware",
+        "Authorize",
+        "BootNotification",
+        "CancelReservation",
+        "ClearCache",
+        "DataTransfer",
+        "GetVariables",
+        "Heartbeat",
+        "RequestStartTransaction",
+        "RequestStopTransaction",
+        "Reset",
+        "SetVariables",
+        "TransactionEvent",
+        "UnlockConnector",
+        "UpdateFirmware",
     ]
         @test haskey(V201_ACTIONS, action)
     end

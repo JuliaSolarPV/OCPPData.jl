@@ -1,9 +1,9 @@
 @testitem "Encode Call" tags = [:fast] begin
     using OCPP
-    using JSON3
+    using JSON
     msg = Call("uid-1", "Heartbeat", Dict{String,Any}())
     json = encode(msg)
-    arr = JSON3.read(json)
+    arr = JSON.parse(json)
     @test arr[1] == 2
     @test arr[2] == "uid-1"
     @test arr[3] == "Heartbeat"
@@ -11,20 +11,20 @@ end
 
 @testitem "Encode CallResult" tags = [:fast] begin
     using OCPP
-    using JSON3
+    using JSON
     msg = CallResult("uid-1", Dict{String,Any}("status" => "Accepted"))
     json = encode(msg)
-    arr = JSON3.read(json)
+    arr = JSON.parse(json)
     @test arr[1] == 3
     @test arr[2] == "uid-1"
 end
 
 @testitem "Encode CallError" tags = [:fast] begin
     using OCPP
-    using JSON3
+    using JSON
     msg = CallError("uid-1", "InternalError", "oops", Dict{String,Any}())
     json = encode(msg)
-    arr = JSON3.read(json)
+    arr = JSON.parse(json)
     @test arr[1] == 4
     @test arr[2] == "uid-1"
     @test arr[3] == "InternalError"

@@ -11,59 +11,59 @@
     @test string(ReadingInterruptionBegin) == "Interruption.Begin"
 end
 
-@testitem "Enum JSON3 write" tags = [:fast] begin
+@testitem "Enum JSON write" tags = [:fast] begin
     using OCPP.V16
-    using JSON3
-    @test JSON3.write(RegistrationAccepted) == "\"Accepted\""
-    @test JSON3.write(ResetHard) == "\"Hard\""
-    @test JSON3.write(ChargingRateA) == "\"A\""
-    @test JSON3.write(MeasurandEnergyActiveImportRegister) ==
+    using JSON
+    @test JSON.json(RegistrationAccepted) == "\"Accepted\""
+    @test JSON.json(ResetHard) == "\"Hard\""
+    @test JSON.json(ChargingRateA) == "\"A\""
+    @test JSON.json(MeasurandEnergyActiveImportRegister) ==
           "\"Energy.Active.Import.Register\""
 end
 
-@testitem "Enum JSON3 read" tags = [:fast] begin
+@testitem "Enum JSON read" tags = [:fast] begin
     using OCPP.V16
-    using JSON3
-    @test JSON3.read("\"Accepted\"", RegistrationStatus) == RegistrationAccepted
-    @test JSON3.read("\"Pending\"", RegistrationStatus) == RegistrationPending
-    @test JSON3.read("\"Hard\"", ResetType) == ResetHard
-    @test JSON3.read("\"A\"", ChargingRateUnitType) == ChargingRateA
+    using JSON
+    @test JSON.parse("\"Accepted\"", RegistrationStatus) == RegistrationAccepted
+    @test JSON.parse("\"Pending\"", RegistrationStatus) == RegistrationPending
+    @test JSON.parse("\"Hard\"", ResetType) == ResetHard
+    @test JSON.parse("\"A\"", ChargingRateUnitType) == ChargingRateA
 end
 
 @testitem "Enum round-trip for all RegistrationStatus values" tags = [:fast] begin
     using OCPP.V16
-    using JSON3
+    using JSON
     for val in instances(RegistrationStatus)
-        @test JSON3.read(JSON3.write(val), RegistrationStatus) == val
+        @test JSON.parse(JSON.json(val), RegistrationStatus) == val
     end
 end
 
 @testitem "Enum round-trip for ChargePointErrorCode" tags = [:fast] begin
     using OCPP.V16
-    using JSON3
+    using JSON
     for val in instances(ChargePointErrorCode)
-        @test JSON3.read(JSON3.write(val), ChargePointErrorCode) == val
+        @test JSON.parse(JSON.json(val), ChargePointErrorCode) == val
     end
 end
 
 @testitem "Enum round-trip for Measurand" tags = [:fast] begin
     using OCPP.V16
-    using JSON3
+    using JSON
     for val in instances(Measurand)
-        @test JSON3.read(JSON3.write(val), Measurand) == val
+        @test JSON.parse(JSON.json(val), Measurand) == val
     end
 end
 
 @testitem "Enum round-trip for Phase" tags = [:fast] begin
     using OCPP.V16
-    using JSON3
+    using JSON
     for val in instances(Phase)
-        @test JSON3.read(JSON3.write(val), Phase) == val
+        @test JSON.parse(JSON.json(val), Phase) == val
     end
 end
 
 @testitem "Enum invalid string throws" tags = [:fast] begin
     using OCPP.V16
-    using JSON3
-    @test_throws KeyError JSON3.read("\"InvalidValue\"", RegistrationStatus)
+    using JSON
+    @test_throws KeyError JSON.parse("\"InvalidValue\"", RegistrationStatus)
 end
