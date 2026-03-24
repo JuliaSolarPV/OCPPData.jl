@@ -61,7 +61,12 @@ result = validate(:v16, "BootNotification", payload, :request)
 isnothing(result)  # true if valid
 ```
 """
-function validate(version::Symbol, action::String, payload::AbstractDict, msg_type::Symbol)
+function validate(
+    version::Symbol,
+    action::String,
+    payload::AbstractDict,
+    msg_type::Symbol,
+)::Union{Nothing,String}
     schema = _get_schema(version, action, msg_type)
     result = JSONSchema.validate(schema, payload)
     return isnothing(result) ? nothing : string(result)
