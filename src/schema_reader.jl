@@ -1,16 +1,13 @@
 """
 Read OCPP JSON schema files and generate Julia types at compile time via macros.
 
-Version-agnostic logic for:
-- Reading JSON schema files
-- Extracting enum value sets and building @enum AST
-- Extracting struct field definitions and building @kwdef struct AST
-- Building action registries
+The two OCPP schema formats (V16 flat schemas, V201 `definitions` + `\$ref`)
+differ only in how a property resolves to a Julia type. Everything else — field
+extraction, enum AST, struct AST, registry AST, topo sort — is shared.
 
-Each OCPP version provides its own registry/config, then calls a macro
-(`@generate_ocpp_types` or `@generate_ocpp_types_from_definitions`) that
-reads schemas at macro-expansion time and splices all type definitions
-into the calling module.
+Each OCPP version provides a `resolve_type(prop, field_name)` function and
+calls a macro that reads schemas at macro-expansion time and splices all
+type definitions into the calling module.
 """
 
 # ---------------------------------------------------------------------------
@@ -82,9 +79,11 @@ function _topo_sort(deps_fn, items::Vector{T})::Vector{T} where {T}
     return ordered
 end
 
-# ---------------------------------------------------------------------------
-# Enum helpers
-# ---------------------------------------------------------------------------
+"""Convert camelCase to snake_case."""
+function _camel_to_snake(s::String)::String
+    result = replace(s, r"([a-z0-9])([A-Z])" => s"\1_\2")
+    return lowercase(result)
+end
 
 """Convert an OCPP enum string value to a valid Julia identifier."""
 function _ocpp_string_to_identifier(s::String)
@@ -97,126 +96,89 @@ function _make_member_name(prefix::String, value::String)
     if isempty(prefix)
         return Symbol(clean)
     end
-    # Don't double-prefix if value already starts with prefix-like text
     if startswith(clean, prefix)
         return Symbol(clean)
     end
     return Symbol(prefix, clean)
 end
 
-"""
-    collect_enums(schemas, enum_registry) -> Dict{Symbol, Vector{Pair{Symbol,String}}}
-
-Scan all schemas, extract unique enum value sets, look up names in
-the registry, and return a Dict mapping enum type name →
-[(member_name => "OCPPString"), ...].
-"""
-function collect_enums(schemas, enum_registry::Dict{Vector{String},Tuple{Symbol,String}})
-    seen = Set{Vector{String}}()
-    result = Dict{Symbol,Vector{Pair{Symbol,String}}}()
-
-    function _walk_enum_props(props)
-        for (_, prop) in props
-            prop isa AbstractDict || continue
-            if haskey(prop, "enum")
-                values = sort(String[string(v) for v in prop["enum"]])
-                if values ∉ seen
-                    push!(seen, values)
-                    if haskey(enum_registry, values)
-                        enum_name, prefix = enum_registry[values]
-                        members = Pair{Symbol,String}[]
-                        for v in prop["enum"]
-                            sv = string(v)
-                            member = _make_member_name(prefix, sv)
-                            push!(members, member => sv)
-                        end
-                        result[enum_name] = members
-                    end
-                end
-            end
-            if get(prop, "type", nothing) == "object" && haskey(prop, "properties")
-                _walk_enum_props(prop["properties"])
-            end
-            if get(prop, "type", nothing) == "array" && haskey(prop, "items")
-                items = prop["items"]
-                if items isa AbstractDict && get(items, "type", nothing) == "object"
-                    if haskey(items, "properties")
-                        _walk_enum_props(items["properties"])
-                    end
-                end
-            end
-        end
+"""Strip Request/Response suffix to get base action name."""
+function _strip_request_response(title::String)
+    if endswith(title, "Response")
+        return title[1:(end-8)]
+    elseif endswith(title, "Request")
+        return title[1:(end-7)]
     end
-
-    for (_, schema) in schemas
-        if haskey(schema, "properties")
-            _walk_enum_props(schema["properties"])
-        end
-    end
-    return result
+    return title
 end
 
+"""Names from Base that enum members must not shadow."""
+const _BASE_NAMES = Set([
+    "string",
+    "print",
+    "show",
+    "read",
+    "write",
+    "open",
+    "close",
+    "nothing",
+    "missing",
+    "true",
+    "false",
+    "Int",
+    "Float64",
+])
+
 # ---------------------------------------------------------------------------
-# Struct field helpers
+# Unified type resolution
 # ---------------------------------------------------------------------------
 
-"""Map a JSON schema property to a Julia type expression (V16 flat schemas)."""
-function _json_type_to_julia(
-    prop::AbstractDict{String,Any},
-    field_name::String,
-    enum_lookup::Dict{Vector{String},Symbol},
-    nested_type_names::Dict{String,Symbol},
-)
-    if haskey(prop, "enum")
-        values = sort(String[string(v) for v in prop["enum"]])
-        if haskey(enum_lookup, values)
-            return enum_lookup[values]
-        end
-        return :String
-    end
+"""
+    _resolve_type(prop, lookup_fn) -> Symbol or Expr
+
+Resolve a JSON schema property to a Julia type expression. `lookup_fn(prop)`
+handles version-specific lookups (inline enums, nested types, `\$ref`);
+shared primitive/array/object logic lives here.
+"""
+function _resolve_type(prop::AbstractDict{String,Any}, lookup_fn)
+    result = lookup_fn(prop)
+    result !== nothing && return result
 
     jtype = get(prop, "type", "string")
     pt = _primitive_type(jtype)
     pt !== nothing && return pt
 
-    if jtype == "object"
-        if haskey(nested_type_names, field_name)
-            return nested_type_names[field_name]
-        end
-        return :(Dict{String,Any})
-    elseif jtype == "array"
+    if jtype == "array"
         items = get(prop, "items", Dict{String,Any}())
         if items isa AbstractDict
-            item_type = get(items, "type", "string")
-            if item_type == "object"
-                if haskey(nested_type_names, field_name)
-                    inner = nested_type_names[field_name]
-                    return :(Vector{$inner})
-                end
-                return :(Vector{Dict{String,Any}})
+            inner = lookup_fn(items)
+            if inner !== nothing
+                return :(Vector{$inner})
             end
-            ipt = _primitive_type(item_type)
+            ipt = _primitive_type(get(items, "type", "string"))
             if ipt !== nothing
                 return :(Vector{$ipt})
             end
         end
         return :(Vector{Any})
+    elseif jtype == "object"
+        return :(Dict{String,Any})
     end
     return :Any
 end
 
-"""Convert camelCase to snake_case."""
-function _camel_to_snake(s::String)::String
-    result = replace(s, r"([a-z0-9])([A-Z])" => s"\1_\2")
-    return lowercase(result)
-end
+# ---------------------------------------------------------------------------
+# Unified field extraction
+# ---------------------------------------------------------------------------
 
-"""Extract field definitions from a JSON schema."""
-function struct_fields_from_schema(
-    schema::AbstractDict{String,Any},
-    enum_lookup::Dict{Vector{String},Symbol},
-    nested_type_names::Dict{String,Symbol},
-)
+"""
+    extract_fields(schema, resolve_type_fn) -> Vector{FieldDef}
+
+Extract field definitions from a JSON schema. `resolve_type_fn(prop, name)`
+maps each property to a Julia type — this is the single point of variation
+between V16 and V201.
+"""
+function extract_fields(schema::AbstractDict{String,Any}, resolve_type_fn)
     props = get(schema, "properties", Dict{String,Any}())
     required_set = Set{String}(get(schema, "required", String[]))
 
@@ -226,7 +188,7 @@ function struct_fields_from_schema(
     for (json_name, prop) in props
         prop isa AbstractDict || continue
         jl_name = Symbol(_camel_to_snake(json_name))
-        jl_type = _json_type_to_julia(prop, json_name, enum_lookup, nested_type_names)
+        jl_type = resolve_type_fn(prop, json_name)
         is_required = json_name in required_set
         push!(
             fields,
@@ -239,88 +201,39 @@ function struct_fields_from_schema(
         )
     end
 
-    # Sort: required fields first, then optional, alphabetical within each
     sort!(fields; by = f -> (!f.required, f.json_name))
     return fields
 end
 
-"""
-Collect all nested object types that need to be generated as shared
-sub-types. Returns them in dependency order (leaves first).
-"""
-function collect_nested_types(
-    schemas,
-    enum_lookup::Dict{Vector{String},Symbol},
-    nested_type_names::Dict{String,Symbol},
-)
-    nested = Dict{Symbol,Any}()
+# ---------------------------------------------------------------------------
+# Generic schema property walker
+# ---------------------------------------------------------------------------
 
-    function _walk_nested_props(props)
-        for (name, prop) in props
-            prop isa AbstractDict || continue
-            ptype = get(prop, "type", nothing)
+"""
+    walk_properties(fn, props)
 
-            if ptype == "object" && haskey(prop, "properties")
-                if haskey(nested_type_names, name)
-                    tname = nested_type_names[name]
-                    if !haskey(nested, tname)
-                        nested[tname] = prop
-                        _walk_nested_props(prop["properties"])
-                    end
-                end
-            elseif ptype == "array" && haskey(prop, "items")
-                items = prop["items"]
-                if items isa AbstractDict &&
-                   get(items, "type", nothing) == "object" &&
-                   haskey(items, "properties")
-                    if haskey(nested_type_names, name)
-                        tname = nested_type_names[name]
-                        if !haskey(nested, tname)
-                            nested[tname] = items
-                            _walk_nested_props(items["properties"])
-                        end
-                    end
-                end
+Recursively walk JSON schema properties, calling `fn(name, prop)` for each.
+Descends into nested objects and array items that are objects.
+"""
+function walk_properties(fn, props)
+    for (name, prop) in props
+        prop isa AbstractDict || continue
+        fn(name, prop)
+        if get(prop, "type", nothing) == "object" && haskey(prop, "properties")
+            walk_properties(fn, prop["properties"])
+        elseif get(prop, "type", nothing) == "array" && haskey(prop, "items")
+            items = prop["items"]
+            if items isa AbstractDict &&
+               get(items, "type", nothing) == "object" &&
+               haskey(items, "properties")
+                walk_properties(fn, items["properties"])
             end
         end
     end
-
-    for (_, schema) in schemas
-        if haskey(schema, "properties")
-            _walk_nested_props(schema["properties"])
-        end
-    end
-
-    # Build field definitions for each nested type
-    type_fields = Dict{Symbol,Any}()
-    for (tname, schema_dict) in nested
-        type_fields[tname] =
-            struct_fields_from_schema(schema_dict, enum_lookup, nested_type_names)
-    end
-
-    # Topological sort using shared helper
-    all_keys = Set(keys(type_fields))
-    sorted_names = _topo_sort(collect(keys(type_fields))) do tname
-        deps = Set{Symbol}()
-        for f in type_fields[tname]
-            ft = f.type
-            if ft isa Symbol && ft in all_keys
-                push!(deps, ft)
-            elseif ft isa Expr && ft.head == :curly
-                inner = ft.args[2]
-                if inner isa Symbol && inner in all_keys
-                    push!(deps, inner)
-                end
-            end
-        end
-        return deps
-    end
-
-    return [name => type_fields[name] for name in sorted_names]
 end
 
 # ---------------------------------------------------------------------------
-# AST builders (replace Core.eval with returned Expr)
+# AST builders
 # ---------------------------------------------------------------------------
 
 const _GENERATED_SOURCE = LineNumberNode(0, Symbol(@__FILE__))
@@ -353,7 +266,6 @@ end
 function struct_expr(name::Symbol, fields)::Expr
     exprs = Expr[]
 
-    # Build field expressions
     field_exprs = Expr[]
     for f in fields
         if f.required
@@ -366,7 +278,6 @@ function struct_expr(name::Symbol, fields)::Expr
         end
     end
 
-    # @kwdef struct
     push!(
         exprs,
         Expr(
@@ -376,16 +287,12 @@ function struct_expr(name::Symbol, fields)::Expr
             Expr(:struct, false, name, Expr(:block, field_exprs...)),
         ),
     )
-
-    # export
     push!(exprs, Expr(:export, name))
 
-    # Empty structs need explicit structlike override for JSON serialization
     if isempty(fields)
         push!(exprs, :(StructUtils.structlike(::Type{$name}) = true))
     end
 
-    # Build fieldtags for camelCase ↔ snake_case mapping
     name_pairs = Tuple{Symbol,String}[]
     for f in fields
         if Symbol(f.json_name) != f.jl_name
@@ -442,20 +349,50 @@ function registry_expr(action_names::Vector{String}, registry_name::Symbol)::Exp
 end
 
 # ---------------------------------------------------------------------------
-# Strip Request/Response suffix to get base action name
+# Shared codegen pipeline
 # ---------------------------------------------------------------------------
 
-function _strip_request_response(title::String)
-    if endswith(title, "Response")
-        return title[1:(end-8)]
-    elseif endswith(title, "Request")
-        return title[1:(end-7)]
+"""
+    _build_all_exprs(enums, sorted_types, action_schemas, resolve_type_fn, registry_name)
+
+Shared codegen: emit enum AST, struct AST for sub-types, struct AST for
+action payloads, and registry AST. Both macros funnel into this.
+"""
+function _build_all_exprs(
+    enums,
+    sorted_types_with_fields,
+    action_schemas,
+    resolve_type_fn,
+    registry_name::Symbol;
+    skip_names::Set{Symbol} = Set{Symbol}(),
+)
+    exprs = Expr[]
+
+    for (name, members) in enums
+        push!(exprs, enum_expr(name, members))
     end
-    return title
+
+    for (name, fields) in sorted_types_with_fields
+        push!(exprs, struct_expr(name, fields))
+    end
+
+    action_names = String[]
+    for (title, schema) in action_schemas
+        sname = Symbol(title)
+        sname in skip_names && continue
+        push!(exprs, struct_expr(sname, extract_fields(schema, resolve_type_fn)))
+        base = _strip_request_response(title)
+        if base ∉ action_names
+            push!(action_names, base)
+        end
+    end
+
+    push!(exprs, registry_expr(action_names, registry_name))
+    return exprs
 end
 
 # ---------------------------------------------------------------------------
-# Macros: compile-time type generation
+# V16 macro
 # ---------------------------------------------------------------------------
 
 """
@@ -483,44 +420,106 @@ macro generate_ocpp_types(
         enum_lookup[values] = name
     end
 
-    exprs = Expr[]
+    # V16 type resolver: check inline enums, then nested type names, then primitives
+    resolve =
+        (prop, field_name) -> _resolve_type(
+            prop,
+            function (p)
+                if haskey(p, "enum")
+                    values = sort(String[string(v) for v in p["enum"]])
+                    if haskey(enum_lookup, values)
+                        return enum_lookup[values]
+                    end
+                    return :String
+                end
+                if get(p, "type", nothing) == "object" &&
+                   haskey(nested_type_names, field_name)
+                    return nested_type_names[field_name]
+                end
+                return nothing
+            end,
+        )
 
-    # 1. Enums
-    enum_defs = collect_enums(schemas, enum_registry)
-    for (ename, members) in enum_defs
-        push!(exprs, enum_expr(ename, members))
-    end
-
-    # 2. Nested types (dependency-ordered)
-    nested = collect_nested_types(schemas, enum_lookup, nested_type_names)
-    for (tname, fields) in nested
-        push!(exprs, struct_expr(tname, fields))
-    end
-
-    # 3. Action payload structs
-    action_names = String[]
-    for (title, schema) in schemas
-        sname = Symbol(title)
-        if any(p -> p.first == sname, nested)
-            continue
+    # Collect enums by walking all schema properties
+    seen = Set{Vector{String}}()
+    enum_defs = Pair{Symbol,Vector{Pair{Symbol,String}}}[]
+    for (_, schema) in schemas
+        haskey(schema, "properties") || continue
+        walk_properties(schema["properties"]) do _, prop
+            haskey(prop, "enum") || return
+            values = sort(String[string(v) for v in prop["enum"]])
+            values in seen && return
+            push!(seen, values)
+            haskey(enum_registry, values) || return
+            enum_name, prefix = enum_registry[values]
+            members = Pair{Symbol,String}[]
+            for v in prop["enum"]
+                sv = string(v)
+                push!(members, _make_member_name(prefix, sv) => sv)
+            end
+            push!(enum_defs, enum_name => members)
         end
-        fields = struct_fields_from_schema(schema, enum_lookup, nested_type_names)
-        push!(exprs, struct_expr(sname, fields))
-        base = _strip_request_response(title)
-        if base ∉ action_names
-            push!(action_names, base)
+    end
+
+    # Collect nested types by walking all schema properties
+    nested_schemas = Dict{Symbol,Any}()
+    for (_, schema) in schemas
+        haskey(schema, "properties") || continue
+        walk_properties(schema["properties"]) do name, prop
+            haskey(nested_type_names, name) || return
+            tname = nested_type_names[name]
+            haskey(nested_schemas, tname) && return
+            ptype = get(prop, "type", nothing)
+            if ptype == "object" && haskey(prop, "properties")
+                nested_schemas[tname] = prop
+            elseif ptype == "array" && haskey(prop, "items")
+                items = prop["items"]
+                if items isa AbstractDict &&
+                   get(items, "type", nothing) == "object" &&
+                   haskey(items, "properties")
+                    nested_schemas[tname] = items
+                end
+            end
         end
     end
 
-    # 4. Registry
-    push!(exprs, registry_expr(action_names, registry_name))
+    # Build fields and topo-sort nested types
+    nested_fields = Dict{Symbol,Any}()
+    for (tname, schema_dict) in nested_schemas
+        nested_fields[tname] = extract_fields(schema_dict, resolve)
+    end
+    all_nested = Set(keys(nested_fields))
+    sorted_nested = _topo_sort(collect(keys(nested_fields))) do tname
+        deps = Set{Symbol}()
+        for f in nested_fields[tname]
+            ft = f.type
+            if ft isa Symbol && ft in all_nested
+                push!(deps, ft)
+            elseif ft isa Expr && ft.head == :curly
+                inner = ft.args[2]
+                if inner isa Symbol && inner in all_nested
+                    push!(deps, inner)
+                end
+            end
+        end
+        return deps
+    end
+    sorted_types = [name => nested_fields[name] for name in sorted_nested]
 
+    exprs = _build_all_exprs(
+        enum_defs,
+        sorted_types,
+        collect(schemas),
+        resolve,
+        registry_name;
+        skip_names = all_nested,
+    )
     return esc(Expr(:block, exprs...))
 end
 
-# ===========================================================================
-# V201-style schemas: types defined in "definitions" with $ref references
-# ===========================================================================
+# ---------------------------------------------------------------------------
+# V201 helpers
+# ---------------------------------------------------------------------------
 
 """Merge all `definitions` sections across schemas into one Dict."""
 function merge_definitions(schemas)
@@ -564,79 +563,12 @@ function _enum_prefix(def_name::String)
     return base
 end
 
-"""
-Resolve a property (which may contain `\$ref`) to a Julia type symbol.
-`def_type_map` maps definition names to Julia type symbols.
-"""
-function _resolve_ref_type(
-    prop::AbstractDict{String,Any},
-    def_type_map::Dict{String,Symbol},
-)
-    if haskey(prop, "\$ref")
-        ref = prop["\$ref"]::String
-        def_name = last(split(ref, "/"))
-        return get(def_type_map, def_name, :Any)
-    end
-
-    jtype = get(prop, "type", "string")
-    pt = _primitive_type(jtype)
-    pt !== nothing && return pt
-
-    if jtype == "array"
-        items = get(prop, "items", Dict{String,Any}())
-        if items isa AbstractDict
-            if haskey(items, "\$ref")
-                ref = items["\$ref"]::String
-                def_name = last(split(ref, "/"))
-                inner = get(def_type_map, def_name, :Any)
-                return :(Vector{$inner})
-            end
-            item_type = get(items, "type", "string")
-            ipt = _primitive_type(item_type)
-            if ipt !== nothing
-                return :(Vector{$ipt})
-            end
-        end
-        return :(Vector{Any})
-    elseif jtype == "object"
-        return :(Dict{String,Any})
-    end
-    return :Any
-end
-
-"""Extract struct fields from a v201 schema/definition, resolving `\$ref`."""
-function fields_from_ref_schema(
-    schema::AbstractDict{String,Any},
-    def_type_map::Dict{String,Symbol},
-)
-    props = get(schema, "properties", Dict{String,Any}())
-    required_set = Set{String}(get(schema, "required", String[]))
-
-    fields =
-        NamedTuple{(:json_name, :jl_name, :type, :required),Tuple{String,Symbol,Any,Bool}}[]
-
-    for (json_name, prop) in props
-        prop isa AbstractDict || continue
-        jl_name = Symbol(_camel_to_snake(json_name))
-        jl_type = _resolve_ref_type(prop, def_type_map)
-        is_required = json_name in required_set
-        push!(
-            fields,
-            (
-                json_name = json_name,
-                jl_name = jl_name,
-                type = jl_type,
-                required = is_required,
-            ),
-        )
-    end
-
-    sort!(fields; by = f -> (!f.required, f.json_name))
-    return fields
-end
+# ---------------------------------------------------------------------------
+# V201 macro
+# ---------------------------------------------------------------------------
 
 """
-    @generate_ocpp_types_from_definitions schema_dir registry_name [prefix_overrides] [skip_definitions]
+    @generate_ocpp_types_from_definitions schema_dir registry_name
 
 Read V201-style OCPP JSON schemas (with `definitions` + `\$ref`) at
 macro-expansion time and splice all type definitions into the calling module.
@@ -662,7 +594,6 @@ macro generate_ocpp_types_from_definitions(schema_dir_expr, registry_name_expr)
     sort!(object_def_names)
 
     # Build def_name → Julia type name mapping (for $ref resolution)
-    # Object types first, then enums (resolve collisions by keeping "Enum" suffix)
     def_type_map = Dict{String,Symbol}()
     obj_jl_names = Set{Symbol}()
     for name in object_def_names
@@ -678,23 +609,18 @@ macro generate_ocpp_types_from_definitions(schema_dir_expr, registry_name_expr)
         def_type_map[name] = jl
     end
 
-    # Detect which enum values appear in multiple enums (need prefixing)
-    # Also detect values that shadow Base names or collide with type names
-    _BASE_NAMES = Set([
-        "string",
-        "print",
-        "show",
-        "read",
-        "write",
-        "open",
-        "close",
-        "nothing",
-        "missing",
-        "true",
-        "false",
-        "Int",
-        "Float64",
-    ])
+    # V201 type resolver: check $ref, then fall back to primitives
+    resolve =
+        (prop, _) -> _resolve_type(prop, function (p)
+            if haskey(p, "\$ref")
+                ref = p["\$ref"]::String
+                def_name = last(split(ref, "/"))
+                return get(def_type_map, def_name, :Any)
+            end
+            return nothing
+        end)
+
+    # Detect which enum values need prefixing
     value_count = Dict{String,Int}()
     for name in enum_def_names
         for v in all_defs[name]["enum"]
@@ -702,8 +628,6 @@ macro generate_ocpp_types_from_definitions(schema_dir_expr, registry_name_expr)
             value_count[sv] = get(value_count, sv, 0) + 1
         end
     end
-
-    # Collect all type names so enum members don't shadow them
     all_type_names = Set{String}()
     for (_, jl) in def_type_map
         push!(all_type_names, string(jl))
@@ -712,38 +636,30 @@ macro generate_ocpp_types_from_definitions(schema_dir_expr, registry_name_expr)
         push!(all_type_names, title)
     end
 
-    exprs = Expr[]
-
-    # 1. Enums
+    # Build enum definitions
+    enum_defs = Pair{Symbol,Vector{Pair{Symbol,String}}}[]
     for def_name in enum_def_names
         jl_name = def_type_map[def_name]
-        defn = all_defs[def_name]
-        values = [string(v) for v in defn["enum"]]
+        values = [string(v) for v in all_defs[def_name]["enum"]]
 
         needs_prefix =
             any(v -> value_count[v] > 1, values) ||
             any(v -> _ocpp_string_to_identifier(v) in _BASE_NAMES, values) ||
             any(v -> _ocpp_string_to_identifier(v) in all_type_names, values)
-        prefix = if needs_prefix
-            _enum_prefix(def_name)
-        else
-            ""
-        end
+        prefix = needs_prefix ? _enum_prefix(def_name) : ""
 
         members = Pair{Symbol,String}[]
         for v in values
-            member = _make_member_name(prefix, v)
-            push!(members, member => v)
+            push!(members, _make_member_name(prefix, v) => v)
         end
-        push!(exprs, enum_expr(jl_name, members))
+        push!(enum_defs, jl_name => members)
     end
 
-    # 2. Object types (topologically sorted)
+    # Topo-sort object types by $ref dependencies
     name_set = Set(object_def_names)
     sorted_obj_names = _topo_sort(object_def_names) do name
         deps = Set{String}()
-        defn = all_defs[name]
-        props = get(defn, "properties", Dict{String,Any}())
+        props = get(all_defs[name], "properties", Dict{String,Any}())
         for (_, prop) in props
             prop isa AbstractDict || continue
             if haskey(prop, "\$ref")
@@ -765,26 +681,14 @@ macro generate_ocpp_types_from_definitions(schema_dir_expr, registry_name_expr)
         return deps
     end
 
+    sorted_types = Pair{Symbol,Any}[]
     for def_name in sorted_obj_names
         jl_name = def_type_map[def_name]
-        defn = all_defs[def_name]
-        fields = fields_from_ref_schema(defn, def_type_map)
-        push!(exprs, struct_expr(jl_name, fields))
+        fields = extract_fields(all_defs[def_name], resolve)
+        push!(sorted_types, jl_name => fields)
     end
 
-    # 3. Action payload structs
-    action_names = String[]
-    for (title, schema) in schemas
-        fields = fields_from_ref_schema(schema, def_type_map)
-        push!(exprs, struct_expr(Symbol(title), fields))
-        base = _strip_request_response(title)
-        if base ∉ action_names
-            push!(action_names, base)
-        end
-    end
-
-    # 4. Registry
-    push!(exprs, registry_expr(action_names, registry_name))
-
+    exprs =
+        _build_all_exprs(enum_defs, sorted_types, collect(schemas), resolve, registry_name)
     return esc(Expr(:block, exprs...))
 end
