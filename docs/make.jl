@@ -1,7 +1,7 @@
-using OCPP
+using OCPPData
 using Documenter
 
-DocMeta.setdocmeta!(OCPP, :DocTestSetup, :(using OCPP); recursive = true)
+DocMeta.setdocmeta!(OCPPData, :DocTestSetup, :(using OCPPData); recursive = true)
 
 const page_rename = Dict("developer.md" => "Developer docs") # Without the numbers
 const numbered_pages = [
@@ -10,12 +10,12 @@ const numbered_pages = [
 ]
 
 makedocs(;
-    modules = [OCPP],
+    modules = [OCPPData],
     authors = "Stefan de Lange <langestefan@msn.com>",
-    repo = "https://github.com/JuliaSolarPV/OCPP.jl/blob/{commit}{path}#{line}",
-    sitename = "OCPP.jl",
-    format = Documenter.HTML(; canonical = "https://JuliaSolarPV.github.io/OCPP.jl"),
+    repo = "https://github.com/JuliaSolarPV/OCPPData.jl/blob/{commit}{path}#{line}",
+    sitename = "OCPPData.jl",
+    format = Documenter.HTML(; canonical = "https://JuliaSolarPV.github.io/OCPPData.jl"),
     pages = ["index.md"; numbered_pages],
 )
 
-deploydocs(; repo = "github.com/JuliaSolarPV/OCPP.jl")
+deploydocs(; repo = "github.com/JuliaSolarPV/OCPPData.jl")

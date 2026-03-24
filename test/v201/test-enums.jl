@@ -1,5 +1,5 @@
 @testitem "V201 Enums" tags = [:fast] begin
-    using OCPP.V201
+    using OCPPData.V201
     import JSON
     using Test
 

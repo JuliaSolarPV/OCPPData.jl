@@ -1,8 +1,8 @@
 ```@meta
-CurrentModule = OCPP
+CurrentModule = OCPPData
 ```
 
-# OCPP.jl
+# OCPPData.jl
 
 A Julia implementation of the [Open Charge Point Protocol](https://www.openchargealliance.org/) (OCPP), the standard communication protocol between electric vehicle charging stations and a central management system (CSMS).
 
@@ -19,12 +19,12 @@ A Julia implementation of the [Open Charge Point Protocol](https://www.opencharg
 
 ```julia
 using Pkg
-Pkg.add("OCPP")
+Pkg.add("OCPPData")
 ```
 
 ```@example quickstart
-using OCPP
-using OCPP.V16
+using OCPPData
+using OCPPData.V16
 import JSON
 
 # Construct a typed request
@@ -66,7 +66,7 @@ isnothing(result)  # true — payload is valid
 ## Package Structure
 
 ```text
-OCPP
+OCPPData
 ├── Call, CallResult, CallError     # Wire-level message types
 ├── encode(), decode()              # OCPP-J codec
 ├── validate()                      # JSON Schema validation

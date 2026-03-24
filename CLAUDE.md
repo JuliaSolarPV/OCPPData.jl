@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-OCPP.jl is a Julia package implementing the Open Charge Point Protocol (OCPP). It is currently in early development, initialized from BestieTemplate.jl. The module lives in `src/OCPP.jl`.
+OCPPData.jl is a Julia package implementing the Open Charge Point Protocol (OCPP). It is currently in early development, initialized from BestieTemplate.jl. The module lives in `src/OCPPData.jl`.
 
 ## Common Commands
 
@@ -38,4 +38,4 @@ Pre-commit hooks are also configured locally via `.pre-commit-config.yaml`.
 
 ## Architecture Notes
 
-The package is a single module (`module OCPP` in `src/OCPP.jl`). As OCPP protocol features are added, expect the module to grow with sub-modules or additional files `include`d from `src/OCPP.jl`. All public functions should have docstrings — they are auto-collected into `docs/src/95-reference.md` by Documenter.jl.
+The package is a single module (`module OCPPData` in `src/OCPPData.jl`). As OCPP protocol features are added, expect the module to grow with sub-modules or additional files `include`d from `src/OCPPData.jl`. All public functions should have docstrings — they are auto-collected into `docs/src/95-reference.md` by Documenter.jl.

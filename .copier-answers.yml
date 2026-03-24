@@ -3,7 +3,7 @@ Authors: Stefan de Lange <langestefan@msn.com>
 JuliaMinVersion: '1.10'
 License: MIT
 LicenseCopyrightHolders: Stefan de Lange
-PackageName: OCPP
+PackageName: OCPPData
 PackageOwner: JuliaSolarPV
 PackageUUID: 96fa3b67-1af3-5f07-99a6-8e4efc5edabb
 StrategyConfirmIncluded: false

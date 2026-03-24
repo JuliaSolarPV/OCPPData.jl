@@ -1,5 +1,5 @@
 @testitem "Codec" tags = [:fast] begin
-    using OCPP
+    using OCPPData
     using JSON
     using Test
 

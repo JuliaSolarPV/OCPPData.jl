@@ -2,7 +2,7 @@
 
 ## Overview
 
-OCPP.jl includes a runtime validation layer powered by [JSONSchema.jl](https://github.com/fredo-dedup/JSONSchema.jl). This lets you validate raw message payloads (as `Dict`) against the official OCPP JSON schemas **before** attempting typed deserialization.
+OCPPData.jl includes a runtime validation layer powered by [JSONSchema.jl](https://github.com/fredo-dedup/JSONSchema.jl). This lets you validate raw message payloads (as `Dict`) against the official OCPP JSON schemas **before** attempting typed deserialization.
 
 This is useful for:
 
@@ -28,7 +28,7 @@ validate(spec::AbstractOCPPSpec, action::String, payload::AbstractDict, msg_type
 ## Examples
 
 ```@example val
-using OCPP, OCPP.V16, OCPP.V201
+using OCPPData, OCPPData.V16, OCPPData.V201
 ```
 
 ### Valid Payload

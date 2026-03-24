@@ -1,5 +1,5 @@
 @testitem "Messages" tags = [:fast] begin
-    using OCPP
+    using OCPPData
     using Test
 
     @testset "Call constructor" begin

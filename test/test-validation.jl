@@ -1,5 +1,5 @@
 @testitem "Schema validation" tags = [:fast] begin
-    using OCPP
+    using OCPPData
     using Test
 
     @testset "V16 BootNotification" begin
@@ -159,7 +159,7 @@
             :request,
         )
         # Unknown spec type → MethodError (no _load_schema method defined for it)
-        struct UnknownSpec <: OCPP.AbstractOCPPSpec end
+        struct UnknownSpec <: OCPPData.AbstractOCPPSpec end
         @test_throws MethodError validate(
             UnknownSpec(),
             "BootNotification",

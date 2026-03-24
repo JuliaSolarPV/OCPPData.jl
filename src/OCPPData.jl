@@ -1,4 +1,4 @@
-module OCPP
+module OCPPData
 
 using JSON
 using StructUtils
@@ -18,7 +18,7 @@ include("schema_reader.jl")
 module V16
 using StructUtils
 using JSON
-using ..OCPP: @generate_ocpp_types, AbstractOCPPSpec
+using ..OCPPData: @generate_ocpp_types, AbstractOCPPSpec
 
 struct Spec <: AbstractOCPPSpec end
 export Spec
@@ -33,7 +33,7 @@ end # module V16
 module V201
 using StructUtils
 using JSON
-using ..OCPP: @generate_ocpp_types_from_definitions, AbstractOCPPSpec
+using ..OCPPData: @generate_ocpp_types_from_definitions, AbstractOCPPSpec
 
 struct Spec <: AbstractOCPPSpec end
 export Spec
@@ -84,4 +84,4 @@ export V16, V201
     )
 end
 
-end # module OCPP
+end # module OCPPData

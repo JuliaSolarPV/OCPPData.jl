@@ -1,5 +1,5 @@
 @testitem "V16 Types" tags = [:fast] begin
-    using OCPP.V16
+    using OCPPData.V16
     using JSON
     using Test
 

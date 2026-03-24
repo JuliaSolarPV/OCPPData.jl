@@ -61,7 +61,7 @@ end
 
 @testitem "Python cross-validation: V16 client → CSMS" tags = [:crossvalidation] setup =
     [PythonOCPP] begin
-    using OCPP.V16
+    using OCPPData.V16
     using Test
 
     @testset "BootNotification req+resp" begin
@@ -246,7 +246,7 @@ end
 
 @testitem "Python cross-validation: V16 CSMS → client" tags = [:crossvalidation] setup =
     [PythonOCPP] begin
-    using OCPP.V16
+    using OCPPData.V16
     using Test
 
     @testset "ChangeAvailability req+resp" begin
@@ -548,7 +548,7 @@ end
 
 @testitem "Python cross-validation: V201 client → CSMS" tags = [:crossvalidation] setup =
     [PythonOCPP] begin
-    using OCPP.V201
+    using OCPPData.V201
     using Test
 
     @testset "BootNotification req+resp" begin
@@ -748,7 +748,7 @@ end
 
 @testitem "Python cross-validation: V201 CSMS → client" tags = [:crossvalidation] setup =
     [PythonOCPP] begin
-    using OCPP.V201
+    using OCPPData.V201
     using Test
 
     @testset "Reset req+resp" begin

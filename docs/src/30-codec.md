@@ -15,7 +15,7 @@ The `unique_id` correlates a `CallResult` or `CallError` back to its originating
 ## Message Types
 
 ```@example codec
-using OCPP
+using OCPPData
 ```
 
 The three concrete subtypes of `OCPPMessage`:

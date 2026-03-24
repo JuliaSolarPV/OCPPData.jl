@@ -2,11 +2,11 @@
 
 ## Working with OCPP Types
 
-OCPP.jl provides typed Julia structs for every OCPP message. Types live in version-specific submodules: `OCPP.V16` (28 actions) and `OCPP.V201` (64 actions).
+OCPPData.jl provides typed Julia structs for every OCPP message. Types live in version-specific submodules: `OCPPData.V16` (28 actions) and `OCPPData.V201` (64 actions).
 
 ```@example guide
-using OCPP
-using OCPP.V16  # brings BootNotificationRequest, HeartbeatRequest, etc. into scope
+using OCPPData
+using OCPPData.V16  # brings BootNotificationRequest, HeartbeatRequest, etc. into scope
 import JSON     # use import (not using) to avoid conflict with V201's JSON enum member
 ```
 
@@ -30,11 +30,11 @@ req.firmware_version
 V201 uses nested types that are separate structs:
 
 ```@example guide201
-using OCPP
+using OCPPData
 import JSON
-station = OCPP.V201.ChargingStation(model = "M", vendor_name = "V")
-req201 = OCPP.V201.BootNotificationRequest(
-    reason = OCPP.V201.BootReasonPowerUp,
+station = OCPPData.V201.ChargingStation(model = "M", vendor_name = "V")
+req201 = OCPPData.V201.BootNotificationRequest(
+    reason = OCPPData.V201.BootReasonPowerUp,
     charging_station = station,
 )
 ```
@@ -94,7 +94,7 @@ V16.response_type("BootNotification")
 
 ```@example guide
 # Number of actions per version
-length(V16.V16_ACTIONS), length(OCPP.V201.V201_ACTIONS)
+length(V16.V16_ACTIONS), length(OCPPData.V201.V201_ACTIONS)
 ```
 
 ## Wire Format (OCPP-J Codec)

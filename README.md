@@ -1,15 +1,15 @@
-# OCPP.jl
+# OCPPData.jl
 
-[![Development documentation](https://img.shields.io/badge/docs-dev-blue.svg)](https://JuliaSolarPV.github.io/OCPP.jl/dev)
+[![Development documentation](https://img.shields.io/badge/docs-dev-blue.svg)](https://JuliaSolarPV.github.io/OCPPData.jl/dev)
 
-[![Test workflow status](https://github.com/JuliaSolarPV/OCPP.jl/actions/workflows/Test.yml/badge.svg?branch=main)](https://github.com/JuliaSolarPV/OCPP.jl/actions/workflows/Test.yml?query=branch%3Amain)
-[![Coverage](https://codecov.io/gh/JuliaSolarPV/OCPP.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/JuliaSolarPV/OCPP.jl)
-[![Lint workflow Status](https://github.com/JuliaSolarPV/OCPP.jl/actions/workflows/Lint.yml/badge.svg?branch=main)](https://github.com/JuliaSolarPV/OCPP.jl/actions/workflows/Lint.yml?query=branch%3Amain)
-[![Docs workflow Status](https://github.com/JuliaSolarPV/OCPP.jl/actions/workflows/Docs.yml/badge.svg?branch=main)](https://github.com/JuliaSolarPV/OCPP.jl/actions/workflows/Docs.yml?query=branch%3Amain)
+[![Test workflow status](https://github.com/JuliaSolarPV/OCPPData.jl/actions/workflows/Test.yml/badge.svg?branch=main)](https://github.com/JuliaSolarPV/OCPPData.jl/actions/workflows/Test.yml?query=branch%3Amain)
+[![Coverage](https://codecov.io/gh/JuliaSolarPV/OCPPData.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/JuliaSolarPV/OCPPData.jl)
+[![Lint workflow Status](https://github.com/JuliaSolarPV/OCPPData.jl/actions/workflows/Lint.yml/badge.svg?branch=main)](https://github.com/JuliaSolarPV/OCPPData.jl/actions/workflows/Lint.yml?query=branch%3Amain)
+[![Docs workflow Status](https://github.com/JuliaSolarPV/OCPPData.jl/actions/workflows/Docs.yml/badge.svg?branch=main)](https://github.com/JuliaSolarPV/OCPPData.jl/actions/workflows/Docs.yml?query=branch%3Amain)
 [![Aqua QA](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 [![tested with JET.jl](https://img.shields.io/badge/%F0%9F%9B%A9%EF%B8%8F_tested_with-JET.jl-233f9a)](https://github.com/aviatesk/JET.jl)
 
-OCPP.jl is a Julia implementation of the [Open Charge Point Protocol](https://www.openchargealliance.org/) (OCPP), the standard communication protocol between electric vehicle charging stations and a central management system (CSMS).
+OCPPData.jl is a Julia implementation of the [Open Charge Point Protocol](https://www.openchargealliance.org/) (OCPP), the standard communication protocol between electric vehicle charging stations and a central management system (CSMS).
 
 All message types are auto-generated from the official OCPP JSON schema files â€” no hand-written structs. The package provides:
 
@@ -23,7 +23,7 @@ All message types are auto-generated from the official OCPP JSON schema files â€
 ## Example Usage
 
 ```julia
-julia> using OCPP, OCPP.V16, JSON
+julia> using OCPPData, OCPPData.V16, JSON
 
 # Construct a typed request (snake_case in Julia)
 julia> req = BootNotificationRequest(
@@ -88,8 +88,8 @@ julia> JSON.json(resp)
 
 ## How to Cite
 
-If you use OCPP.jl in your work, please cite using the reference given in [CITATION.cff](https://github.com/JuliaSolarPV/OCPP.jl/blob/main/CITATION.cff).
+If you use OCPPData.jl in your work, please cite using the reference given in [CITATION.cff](https://github.com/JuliaSolarPV/OCPPData.jl/blob/main/CITATION.cff).
 
 ## Contributing
 
-If you want to make contributions of any kind, please first take a look into our [contributing guide directly on GitHub](docs/src/90-contributing.md) or the [contributing page on the website](https://JuliaSolarPV.github.io/OCPP.jl/dev/90-contributing/).
+If you want to make contributions of any kind, please first take a look into our [contributing guide directly on GitHub](docs/src/90-contributing.md) or the [contributing page on the website](https://JuliaSolarPV.github.io/OCPPData.jl/dev/90-contributing/).

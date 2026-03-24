@@ -48,9 +48,9 @@ jobs:
         run: |
           julia --project=docs -e '
             using Documenter: DocMeta, doctest
-            using OCPP
-            DocMeta.setdocmeta!(OCPP, :DocTestSetup, :(using OCPP); recursive=true)
-            doctest(OCPP)'
+            using OCPPData
+            DocMeta.setdocmeta!(OCPPData, :DocTestSetup, :(using OCPPData); recursive=true)
+            doctest(OCPPData)'
       - name: Generate and deploy documentation
         run: julia --project=docs docs/make.jl
         env:

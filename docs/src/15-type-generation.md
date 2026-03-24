@@ -2,7 +2,7 @@
 
 ## The Big Picture
 
-OCPP.jl does **not** contain hand-written Julia structs for OCPP messages. Instead, every struct and enum is generated automatically from the official OCPP JSON schema files when the package is first loaded.
+OCPPData.jl does **not** contain hand-written Julia structs for OCPP messages. Instead, every struct and enum is generated automatically from the official OCPP JSON schema files when the package is first loaded.
 
 ```text
 src/v16/schemas/BootNotification.json          ──┐
@@ -22,7 +22,7 @@ src/v201/schemas/BootNotificationResponse.json ──┤  schema_reader.jl
                                                  └
 ```
 
-This happens at macro-expansion time via two macros in `schema_reader.jl`: `@generate_ocpp_types` (V16) and `@generate_ocpp_types_from_definitions` (V201). Each macro reads the JSON schema files, builds Julia AST (`Expr` objects) for all enums, structs, and registries, and returns that AST via `esc(Expr(:block, ...))` — standard macro expansion. After the first precompilation, everything is cached and subsequent `using OCPP` is fast.
+This happens at macro-expansion time via two macros in `schema_reader.jl`: `@generate_ocpp_types` (V16) and `@generate_ocpp_types_from_definitions` (V201). Each macro reads the JSON schema files, builds Julia AST (`Expr` objects) for all enums, structs, and registries, and returns that AST via `esc(Expr(:block, ...))` — standard macro expansion. After the first precompilation, everything is cached and subsequent `using OCPPData` is fast.
 
 ## What Gets Generated
 
@@ -35,8 +35,8 @@ Three kinds of Julia types are created from each set of schema files:
 | **Action structs** | One per schema file (the message payload) | `BootNotificationRequest`, `HeartbeatResponse` |
 
 ```@example typegen
-using OCPP
-using OCPP.V16
+using OCPPData
+using OCPPData.V16
 import JSON
 nothing # hide
 ```
@@ -136,7 +136,7 @@ end
 
 V16 schemas have a limitation: enum values appear inline as `"enum": ["Accepted", "Pending", "Rejected"]` without any type name. The same list `["Accepted", "Rejected"]` might appear in several schemas meaning different things.
 
-OCPP.jl solves this with a **hand-curated registry** in `src/v16/registries.jl`:
+OCPPData.jl solves this with a **hand-curated registry** in `src/v16/registries.jl`:
 
 ```julia
 const V16_ENUM_REGISTRY = Dict{Vector{String}, Tuple{Symbol, String}}(
@@ -235,7 +235,7 @@ The same `definitions` (like `ChargingStationType` or `CustomDataType`) appear i
 
 ```@example typegen
 # CustomData appears in nearly every V201 schema, but is generated once
-OCPP.V201.CustomData
+OCPPData.V201.CustomData
 ```
 
 ### Automatic Name Derivation
@@ -259,7 +259,7 @@ Enum members are prefixed when needed to avoid collisions:
 ```@example typegen
 # MessageTrigger enum — members are prefixed because "TransactionEvent"
 # would collide with the TransactionEvent enum type
-instances(OCPP.V201.MessageTrigger) |> collect
+instances(OCPPData.V201.MessageTrigger) |> collect
 ```
 
 ### V201 Generation Pipeline
@@ -327,7 +327,7 @@ sort(collect(keys(V16.V16_ACTIONS)))
 
 ```@example typegen
 # Total types per version
-v16_names = filter(n -> getfield(OCPP.V16, n) isa DataType, names(OCPP.V16))
-v201_names = filter(n -> getfield(OCPP.V201, n) isa DataType, names(OCPP.V201))
+v16_names = filter(n -> getfield(OCPPData.V16, n) isa DataType, names(OCPPData.V16))
+v201_names = filter(n -> getfield(OCPPData.V201, n) isa DataType, names(OCPPData.V201))
 length(v16_names), length(v201_names)
 ```

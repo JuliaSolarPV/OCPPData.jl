@@ -1,5 +1,5 @@
 @testitem "V201 Actions" tags = [:fast] begin
-    using OCPP.V201
+    using OCPPData.V201
     using Test
 
     @testset "request_type lookup" begin

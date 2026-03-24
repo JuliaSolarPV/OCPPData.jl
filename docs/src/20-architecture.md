@@ -3,7 +3,7 @@
 ## Module Structure
 
 ```text
-module OCPP                          # top-level
+module OCPPData                          # top-level
 ├── messages.jl                      # Call, CallResult, CallError types
 ├── codec.jl                         # encode/decode OCPP-J wire format
 ├── schema_reader.jl                 # type generation engine (version-agnostic)
@@ -17,7 +17,7 @@ module OCPP                          # top-level
     └── v201/schemas/*.json          # official OCPP 2.0.1 JSON schemas (128 files)
 ```
 
-The top-level `OCPP` module provides the wire-level types (`Call`, `CallResult`, `CallError`), the codec (`encode`/`decode`), and schema validation (`validate`). The version submodules V16 and V201 contain all OCPP message structs and enums — these are generated at load time from the JSON schema files. See [Schema-Driven Type Generation](@ref type-generation) for a detailed walkthrough of how this works.
+The top-level `OCPPData` module provides the wire-level types (`Call`, `CallResult`, `CallError`), the codec (`encode`/`decode`), and schema validation (`validate`). The version submodules V16 and V201 contain all OCPP message structs and enums — these are generated at load time from the JSON schema files. See [Schema-Driven Type Generation](@ref type-generation) for a detailed walkthrough of how this works.
 
 ## Key Design Decisions
 
@@ -43,15 +43,15 @@ Types are determined from data (JSON files), not from source code. The two macro
 V16 and V201 define types with the same names (e.g., both have `BootNotificationRequest`) but with different fields. Putting them in separate submodules avoids name collisions and lets users import only the version they need:
 
 ```@example arch
-using OCPP
+using OCPPData
 
 # V16 BootNotificationRequest has charge_point_vendor, charge_point_model, ...
-fieldnames(OCPP.V16.BootNotificationRequest)
+fieldnames(OCPPData.V16.BootNotificationRequest)
 ```
 
 ```@example arch
 # V201 BootNotificationRequest has reason, charging_station, ...
-fieldnames(OCPP.V201.BootNotificationRequest)
+fieldnames(OCPPData.V201.BootNotificationRequest)
 ```
 
 ## Data Flow

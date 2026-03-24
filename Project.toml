@@ -1,4 +1,4 @@
-name = "OCPP"
+name = "OCPPData"
 uuid = "96fa3b67-1af3-5f07-99a6-8e4efc5edabb"
 version = "0.1.0"
 authors = ["Stefan de Lange <langestefan@msn.com>"]
