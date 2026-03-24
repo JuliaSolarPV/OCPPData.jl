@@ -19,6 +19,8 @@ module OCPPData                          # top-level
 
 The top-level `OCPPData` module provides the wire-level types (`Call`, `CallResult`, `CallError`), the codec (`encode`/`decode`), and schema validation (`validate`). The version submodules V16 and V201 contain all OCPP message structs and enums — these are generated at load time from the JSON schema files. See [Schema-Driven Type Generation](@ref type-generation) for a detailed walkthrough of how this works.
 
+Which version submodules are loaded is controlled by the `protocol_version` preference (`"all"`, `"v16"`, or `"v201"`). When a version is disabled, its module file is not `include`d, its schemas are not loaded, and its precompile workload is skipped. See the [Usage Guide](@ref) for configuration details.
+
 ## Key Design Decisions
 
 ### Why generate types from schemas?

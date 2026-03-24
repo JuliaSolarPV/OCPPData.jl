@@ -14,6 +14,7 @@ A Julia implementation of the [Open Charge Point Protocol](https://www.opencharg
 - **Schema validation** — validate message payloads against official JSON schemas at runtime
 - **Type-safe** — every OCPP message is a concrete Julia struct with proper field types
 - **camelCase ↔ snake\_case** — automatic conversion between JSON wire format and Julia conventions
+- **Configurable** — load only V16, only V201, or both via [Preferences.jl](https://github.com/JuliaPackaging/Preferences.jl)
 
 ## Quick Start
 

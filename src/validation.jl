@@ -1,10 +1,9 @@
 """
 Runtime validation of OCPP message payloads against JSON schemas using JSONSchema.jl.
 
-Schemas are eagerly loaded at module init time into per-version dictionaries
-(`V16._SCHEMAS`, `V201._SCHEMAS`). Version-specific behaviour (schema directory,
-filename convention) is resolved via multiple dispatch on the concrete
-`AbstractOCPPSpec` subtype.
+Schemas are eagerly loaded at module init time into per-version dictionaries.
+Version-specific behaviour (schema directory, filename convention) is resolved via
+multiple dispatch on the concrete `AbstractOCPPSpec` subtype.
 """
 
 import JSONSchema
@@ -35,18 +34,22 @@ function _load_all_schemas!(
     return nothing
 end
 
-function _get_schema(::V16.Spec, action::String, msg_type::Symbol)
-    key = "$(action)_$(msg_type)"
-    haskey(V16._SCHEMAS, key) ||
-        throw(ArgumentError("No schema found for action: $action ($msg_type)"))
-    return V16._SCHEMAS[key]
+if ENABLE_V16
+    function _get_schema(::V16.Spec, action::String, msg_type::Symbol)
+        key = "$(action)_$(msg_type)"
+        haskey(V16._SCHEMAS, key) ||
+            throw(ArgumentError("No schema found for action: $action ($msg_type)"))
+        return V16._SCHEMAS[key]
+    end
 end
 
-function _get_schema(::V201.Spec, action::String, msg_type::Symbol)
-    key = "$(action)_$(msg_type)"
-    haskey(V201._SCHEMAS, key) ||
-        throw(ArgumentError("No schema found for action: $action ($msg_type)"))
-    return V201._SCHEMAS[key]
+if ENABLE_V201
+    function _get_schema(::V201.Spec, action::String, msg_type::Symbol)
+        key = "$(action)_$(msg_type)"
+        haskey(V201._SCHEMAS, key) ||
+            throw(ArgumentError("No schema found for action: $action ($msg_type)"))
+        return V201._SCHEMAS[key]
+    end
 end
 
 """

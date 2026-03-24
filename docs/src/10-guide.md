@@ -1,5 +1,40 @@
 # Usage Guide
 
+## Protocol Version Selection
+
+By default, OCPPData.jl loads both OCPP 1.6 and OCPP 2.0.1 types and schemas. If you only need one version, you can reduce load time and memory usage by setting the `protocol_version` preference via [Preferences.jl](https://github.com/JuliaPackaging/Preferences.jl).
+
+The preference is a compile-time constant, so it must be set **before** loading OCPPData. Create a `LocalPreferences.toml` file in your project root:
+
+```toml
+[OCPPData]
+protocol_version = "v16"    # or "v201" or "all"
+```
+
+Valid values:
+
+- `"all"` (default) — load both V16 and V201
+- `"v16"` — load only OCPP 1.6
+- `"v201"` — load only OCPP 2.0.1
+
+You can also set the preference programmatically. Since the preference is read at compile time, you must set it in a separate Julia session before loading OCPPData:
+
+```julia
+# Session 1: set the preference
+using Preferences
+set_preferences!("OCPPData", "protocol_version" => "v16"; force = true)
+```
+
+```julia
+# Session 2: OCPPData now loads only V16
+using OCPPData
+isdefined(OCPPData, :V16)   # true
+isdefined(OCPPData, :V201)  # false
+```
+
+!!! warning "Version availability"
+    When a version is disabled, its submodule (`V16` or `V201`) is not defined. Code that references a disabled version will error. Make sure your tests and application code match the configured version.
+
 ## Working with OCPP Types
 
 OCPPData.jl provides typed Julia structs for every OCPP message. Types live in version-specific submodules: `OCPPData.V16` (28 actions) and `OCPPData.V201` (64 actions).
