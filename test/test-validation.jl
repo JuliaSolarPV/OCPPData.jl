@@ -5,7 +5,7 @@
     @testset "V16 BootNotification" begin
         @test isnothing(
             validate(
-                :v16,
+                V16.Spec(),
                 "BootNotification",
                 Dict(
                     "chargePointVendor" => "TestVendor",
@@ -15,13 +15,17 @@
             ),
         )
         # missing required field
-        result =
-            validate(:v16, "BootNotification", Dict("chargePointVendor" => "V"), :request)
+        result = validate(
+            V16.Spec(),
+            "BootNotification",
+            Dict("chargePointVendor" => "V"),
+            :request,
+        )
         @test !isnothing(result)
         @test occursin("required", result)
         # wrong field type
         result = validate(
-            :v16,
+            V16.Spec(),
             "BootNotification",
             Dict("chargePointVendor" => 123, "chargePointModel" => "M"),
             :request,
@@ -30,7 +34,7 @@
         @test occursin("type", result)
         # additional properties not allowed
         result = validate(
-            :v16,
+            V16.Spec(),
             "BootNotification",
             Dict(
                 "chargePointVendor" => "V",
@@ -45,7 +49,7 @@
     @testset "V16 BootNotification response" begin
         @test isnothing(
             validate(
-                :v16,
+                V16.Spec(),
                 "BootNotification",
                 Dict(
                     "status" => "Accepted",
@@ -58,12 +62,12 @@
     end
 
     @testset "V16 Heartbeat empty payload" begin
-        @test isnothing(validate(:v16, "Heartbeat", Dict{String,Any}(), :request))
+        @test isnothing(validate(V16.Spec(), "Heartbeat", Dict{String,Any}(), :request))
     end
 
     @testset "V16 StartTransaction maxLength violation" begin
         result = validate(
-            :v16,
+            V16.Spec(),
             "StartTransaction",
             Dict{String,Any}(
                 "connectorId" => 1,
@@ -78,7 +82,7 @@
 
     @testset "V16 SetChargingProfile float limit" begin
         result = validate(
-            :v16,
+            V16.Spec(),
             "SetChargingProfile",
             Dict{String,Any}(
                 "connectorId" => 1,
@@ -104,7 +108,7 @@
     @testset "V201 BootNotification" begin
         @test isnothing(
             validate(
-                :v201,
+                V201.Spec(),
                 "BootNotification",
                 Dict(
                     "reason" => "PowerUp",
@@ -114,7 +118,8 @@
             ),
         )
         # missing required field
-        result = validate(:v201, "BootNotification", Dict("reason" => "PowerUp"), :request)
+        result =
+            validate(V201.Spec(), "BootNotification", Dict("reason" => "PowerUp"), :request)
         @test !isnothing(result)
         @test occursin("required", result)
     end
@@ -122,7 +127,7 @@
     @testset "V201 BootNotification response" begin
         @test isnothing(
             validate(
-                :v201,
+                V201.Spec(),
                 "BootNotification",
                 Dict(
                     "status" => "Accepted",
@@ -134,7 +139,7 @@
         )
         # wrong type for interval
         result = validate(
-            :v201,
+            V201.Spec(),
             "BootNotification",
             Dict(
                 "status" => "Accepted",
@@ -148,13 +153,15 @@
 
     @testset "Error cases" begin
         @test_throws ArgumentError validate(
-            :v16,
+            V16.Spec(),
             "NonExistentAction",
             Dict{String,Any}(),
             :request,
         )
-        @test_throws ArgumentError validate(
-            :v99,
+        # Unknown spec type → MethodError (no _load_schema method defined for it)
+        struct UnknownSpec <: OCPP.AbstractOCPPSpec end
+        @test_throws MethodError validate(
+            UnknownSpec(),
             "BootNotification",
             Dict{String,Any}(),
             :request,

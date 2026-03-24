@@ -1,2 +1,5 @@
+
 [pip.deps]
 ocpp = ">=2.0.0"
+[deps]
+copier = ""

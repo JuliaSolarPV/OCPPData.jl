@@ -65,11 +65,11 @@ julia> decoded.action
 
 ```julia
 # Validate a payload against the official JSON schema
-julia> validate(:v16, "BootNotification", decoded.payload, :request)
+julia> validate(V16.Spec(), "BootNotification", decoded.payload, :request)
 # nothing — payload is valid
 
 # Invalid payload: missing required field
-julia> validate(:v16, "BootNotification", Dict("chargePointVendor" => "V"), :request)
+julia> validate(V16.Spec(), "BootNotification", Dict("chargePointVendor" => "V"), :request)
 "Validation failed:\npath:         top-level\ninstance:     ..."
 ```
 

@@ -122,13 +122,13 @@ See [Codec](@ref codec) for details on all message types.
 Validate raw payloads (as `Dict`) against the official OCPP JSON schemas before parsing into typed structs.
 
 ```@example guide
-result = validate(:v16, "BootNotification", decoded.payload, :request)
+result = validate(V16.Spec(), "BootNotification", decoded.payload, :request)
 isnothing(result)  # true — payload is valid
 ```
 
 ```@example guide
 # Invalid payload: missing required field
-result = validate(:v16, "BootNotification", Dict("chargePointVendor" => "V"), :request)
+result = validate(V16.Spec(), "BootNotification", Dict("chargePointVendor" => "V"), :request)
 ```
 
 See [Validation](@ref validation) for the full API.
@@ -140,7 +140,7 @@ A typical OCPP message handling pipeline looks like:
 ```text
 WebSocket frame (raw JSON string)
   → decode(raw)               # parse wire format → Call/CallResult/CallError
-  → validate(:v16, ...)       # validate payload against schema (optional)
+  → validate(V16.Spec(), ...) # validate payload against schema (optional)
   → JSON.parse(payload, T)    # deserialize Dict → typed struct
   → process(request)          # your application logic
   → JSON.json(response)       # serialize response struct → JSON

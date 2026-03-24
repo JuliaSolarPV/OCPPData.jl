@@ -13,12 +13,12 @@ This is useful for:
 ## API
 
 ```julia
-validate(version::Symbol, action::String, payload::AbstractDict, msg_type::Symbol)
+validate(spec::AbstractOCPPSpec, action::String, payload::AbstractDict, msg_type::Symbol)
 ```
 
 | Argument | Values | Example |
 |----------|--------|---------|
-| `version` | `:v16` or `:v201` | `:v16` |
+| `spec` | `V16.Spec()` or `V201.Spec()` | `V16.Spec()` |
 | `action` | Action name | `"BootNotification"` |
 | `payload` | Message payload as a Dict | `Dict("chargePointVendor" => "V", ...)` |
 | `msg_type` | `:request` or `:response` | `:request` |
@@ -28,14 +28,14 @@ validate(version::Symbol, action::String, payload::AbstractDict, msg_type::Symbo
 ## Examples
 
 ```@example val
-using OCPP
+using OCPP, OCPP.V16, OCPP.V201
 ```
 
 ### Valid Payload
 
 ```@example val
 result = validate(
-    :v16,
+    V16.Spec(),
     "BootNotification",
     Dict("chargePointVendor" => "V", "chargePointModel" => "M"),
     :request,
@@ -47,7 +47,7 @@ isnothing(result)
 
 ```@example val
 validate(
-    :v16,
+    V16.Spec(),
     "BootNotification",
     Dict("chargePointVendor" => "V"),
     :request,
@@ -58,7 +58,7 @@ validate(
 
 ```@example val
 validate(
-    :v16,
+    V16.Spec(),
     "BootNotification",
     Dict("chargePointVendor" => 123, "chargePointModel" => "M"),
     :request,
@@ -69,7 +69,7 @@ validate(
 
 ```@example val
 result = validate(
-    :v16,
+    V16.Spec(),
     "BootNotification",
     Dict(
         "status" => "Accepted",
@@ -85,7 +85,7 @@ isnothing(result)
 
 ```@example val
 result = validate(
-    :v201,
+    V201.Spec(),
     "BootNotification",
     Dict(
         "reason" => "PowerUp",
@@ -99,7 +99,7 @@ isnothing(result)
 ### Empty Payload (HeartbeatRequest)
 
 ```@example val
-result = validate(:v16, "Heartbeat", Dict{String,Any}(), :request)
+result = validate(V16.Spec(), "Heartbeat", Dict{String,Any}(), :request)
 isnothing(result)
 ```
 
@@ -107,7 +107,7 @@ isnothing(result)
 
 Schemas are **lazy-loaded and cached** on first use. The first call to `validate` for a given action reads the JSON schema file from disk and compiles it into a `JSONSchema.Schema` object. Subsequent calls for the same action reuse the cached schema.
 
-Schema files are resolved based on version-specific naming conventions:
+Schema files are resolved based on version-specific naming conventions, encoded via multiple dispatch on the `Spec` type:
 
 - **V16**: `BootNotification.json` (request), `BootNotificationResponse.json` (response)
 - **V201**: `BootNotificationRequest.json`, `BootNotificationResponse.json`

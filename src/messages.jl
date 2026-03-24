@@ -46,3 +46,11 @@ function CallError(
 )
     return CallError(4, unique_id, error_code, error_description, error_details)
 end
+
+"""
+Abstract base type for OCPP protocol version specifiers.
+
+Concrete subtypes (`V16.Spec`, `V201.Spec`) are used as dispatch tokens to select
+version-specific behaviour — e.g. `validate(V16.Spec(), ...)`.
+"""
+abstract type AbstractOCPPSpec end

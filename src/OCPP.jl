@@ -18,7 +18,11 @@ include("schema_reader.jl")
 module V16
 using StructUtils
 using JSON
-using ..OCPP: @generate_ocpp_types
+using ..OCPP: @generate_ocpp_types, AbstractOCPPSpec
+
+"""Spec singleton for OCPP 1.6. Pass `V16.Spec()` to version-dispatched functions."""
+struct Spec <: AbstractOCPPSpec end
+export Spec
 
 include("v16/registries.jl")
 
@@ -30,7 +34,11 @@ end # module V16
 module V201
 using StructUtils
 using JSON
-using ..OCPP: @generate_ocpp_types_from_definitions
+using ..OCPP: @generate_ocpp_types_from_definitions, AbstractOCPPSpec
+
+"""Spec singleton for OCPP 2.0.1. Pass `V201.Spec()` to version-dispatched functions."""
+struct Spec <: AbstractOCPPSpec end
+export Spec
 
 const _SCHEMA_DIR = joinpath(@__DIR__, "v201", "schemas")
 @generate_ocpp_types_from_definitions _SCHEMA_DIR :V201_ACTIONS
@@ -41,6 +49,7 @@ include("validation.jl")
 
 # Exports — protocol-level
 export OCPPMessage, Call, CallResult, CallError
+export AbstractOCPPSpec
 export encode, decode, generate_unique_id, validate
 
 # Re-export version submodules
@@ -70,7 +79,7 @@ export V16, V201
 
     # Schema validation
     validate(
-        :v16,
+        V16.Spec(),
         "BootNotification",
         Dict{String,Any}("chargePointVendor" => "V", "chargePointModel" => "M"),
         :request,
